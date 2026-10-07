@@ -1,0 +1,31 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Campus Cafeteria ERD" id="GE_JuLmxBOea2vv_kwCA">
+    <mxGraphModel dx="1392" dy="847" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2ZINK0bVflm8Zwf1bzwp-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;align=left;spacingLeft=10;spacingTop=8;" value="&lt;b&gt;USERS&lt;/b&gt;&lt;hr&gt;PK user_id : INT&lt;br&gt;lname : VARCHAR(100)&lt;div&gt;fname : VARCHAR(100)&lt;br&gt;email : VARCHAR(100) UNIQUE&lt;br&gt;password : VARCHAR(255)&lt;br&gt;role : ENUM&lt;br&gt;created_at : DATETIME&lt;/div&gt;" vertex="1">
+          <mxGeometry height="220" width="250" x="60" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="2ZINK0bVflm8Zwf1bzwp-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;align=left;spacingLeft=10;spacingTop=8;" value="&lt;b&gt;ORDERS&lt;/b&gt;&lt;hr&gt;PK order_id : INT&lt;br&gt;FK user_id : INT&lt;br&gt;queue_number : INT&lt;br&gt;status : ENUM&lt;br&gt;total_amount : DECIMAL(10,2)&lt;br&gt;ordered_at : DATETIME&lt;br&gt;updated_at : DATETIME" vertex="1">
+          <mxGeometry height="220" width="250" x="410" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="2ZINK0bVflm8Zwf1bzwp-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;align=left;spacingLeft=10;spacingTop=8;" value="&lt;b&gt;ORDER_ITEMS&lt;/b&gt;&lt;hr&gt;PK order_item_id : INT&lt;br&gt;FK order_id : INT&lt;br&gt;FK menu_item_id : INT&lt;br&gt;quantity : INT&lt;br&gt;unit_price : DECIMAL(10,2)&lt;br&gt;subtotal : DECIMAL(10,2)" vertex="1">
+          <mxGeometry height="200" width="250" x="760" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="2ZINK0bVflm8Zwf1bzwp-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;align=left;spacingLeft=10;spacingTop=8;" value="&lt;b&gt;MENU_ITEMS&lt;/b&gt;&lt;hr&gt;PK menu_item_id : INT&lt;br&gt;name : VARCHAR(100)&lt;br&gt;description : TEXT&lt;br&gt;price : DECIMAL(10,2)&lt;br&gt;is_available : BOOLEAN&lt;br&gt;created_at : DATETIME&lt;br&gt;updated_at : DATETIME" vertex="1">
+          <mxGeometry height="220" width="250" x="760" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="2ZINK0bVflm8Zwf1bzwp-5" edge="1" parent="1" source="2ZINK0bVflm8Zwf1bzwp-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="2ZINK0bVflm8Zwf1bzwp-2" value="1 : N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2ZINK0bVflm8Zwf1bzwp-6" edge="1" parent="1" source="2ZINK0bVflm8Zwf1bzwp-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="2ZINK0bVflm8Zwf1bzwp-3" value="1 : N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2ZINK0bVflm8Zwf1bzwp-7" edge="1" parent="1" source="2ZINK0bVflm8Zwf1bzwp-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=ERmany;startArrow=ERone;" target="2ZINK0bVflm8Zwf1bzwp-3" value="1 : N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
