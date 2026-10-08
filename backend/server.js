@@ -4,6 +4,12 @@ require("dotenv").config();
 
 const app = express();
 
+app.use(express.json());
+
+app.get("/api/health", (req, res) => {
+  res.json({ message: "Backend is working" });
+});
+
 const pool = new Pool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
