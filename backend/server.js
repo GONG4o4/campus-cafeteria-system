@@ -1,22 +1,16 @@
 const express = require("express");
-const { Pool } = require("pg");
+const pool = require("./db");
 require("dotenv").config();
-
+const auth = require("./routes/auth");
 const app = express();
 
 app.use(express.json());
+app.use("/api/auth", auth);
 
 app.get("/api/health", (req, res) => {
   res.json({ message: "Backend is working" });
 });
 
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-});
 
 const PORT = 3000;
 
