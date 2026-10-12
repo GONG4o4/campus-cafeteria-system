@@ -2,6 +2,10 @@ const express = require("express");
 const pool = require("./db");
 require("dotenv").config();
 const auth = require("./routes/auth");
+const {
+  authenticateToken,
+  requireRole
+} = require("./middleware/authMiddleware");
 const app = express();
 
 app.use(express.json());
@@ -11,6 +15,18 @@ app.get("/api/health", (req, res) => {
   res.json({ message: "Backend is working" });
 });
 
+app.get("/api/test/protected", authenticateToken, (req, res) =>{
+    res.json({
+      message: "You are Authenticated!!!",
+      user: req.user
+    });
+});
+
+app.get("/api/test/staff-only", authenticateToken, requireRole("staff"), (req, res) => {
+    res.json({
+      message: "Welcome, Staff!!!"
+    });
+});
 
 const PORT = 3000;
 
