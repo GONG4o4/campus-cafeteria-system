@@ -5,7 +5,7 @@ const authenticateToken = (req, res, next) => {
 
     if (!authHeader) {
         return res.status(401).json({
-            message: "Authentication required"
+            message: "Unauthorized"
         });
     }
 
@@ -18,7 +18,7 @@ const authenticateToken = (req, res, next) => {
         !token
     ) {
         return res.status(401).json({
-            message: "Authentication required"
+            message: "Unauthorized"
         });
     }
 
@@ -38,10 +38,11 @@ const authenticateToken = (req, res, next) => {
             typeof decoded !== "object" ||
             !Number.isInteger(decoded.user_id) ||
             decoded.user_id <= 0 ||
-            typeof decoded.role !== "string"
+            typeof decoded.role !== "string" ||
+            !Number.isInteger(decoded.exp)
         ) {
             return res.status(401).json({
-                message: "Authentication required"
+                message: "Unauthorized"
             });
         }
 
@@ -54,7 +55,7 @@ const authenticateToken = (req, res, next) => {
 
     } catch (error) {
         return res.status(401).json({
-            message: "Authentication required"
+            message: "Unauthorized"
         });
     }
 };
@@ -63,7 +64,7 @@ const requireRole = (...allowedRoles) => {
     return (req, res, next) => {
         if (!req.user) {
             return res.status(401).json({
-                message: "Authentication required"
+                message: "Unauthorized"
             });
         }
 
@@ -79,5 +80,9 @@ const requireRole = (...allowedRoles) => {
 
 module.exports = {
     authenticateToken,
-    requireRole
+    requireRole,
+
+
+    authenticate: authenticateToken,
+    authorizeRoles: requireRole
 };
