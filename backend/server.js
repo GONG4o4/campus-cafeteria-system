@@ -2,10 +2,12 @@ const express = require("express");
 const pool = require("./db");
 require("dotenv").config();
 const auth = require("./routes/auth");
+const authTest = require("./routes/authTest");
 const app = express();
 
 app.use(express.json());
 app.use("/api/auth", auth);
+app.use("/api/auth", authTest);
 
 app.get("/api/health", (req, res) => {
   res.json({ message: "Backend is working" });
