@@ -62,7 +62,7 @@ const mockOrders = [
       },
     ],
   },
-  
+
   {
     order_id: 5,
     queue_number: 9,
@@ -81,3 +81,15 @@ const mockOrders = [
 ];
 
 export default mockOrders;
+
+// Adapt the shared mock data to the order history view while keeping its default export.
+const orderHistoryOrders = mockOrders.map((order) => ({
+  ...order,
+  id: `order-${order.order_id}`,
+  reference: `CAF-${String(order.order_id).padStart(4, '0')}`,
+  queueNumber: String(order.queue_number).padStart(3, '0'),
+  createdAt: `${order.ordered_at}+08:00`,
+  items: order.items.map((item) => ({ ...item, id: item.menu_item_id })),
+}));
+
+export { orderHistoryOrders as mockOrders };
