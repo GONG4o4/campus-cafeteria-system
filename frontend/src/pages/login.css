@@ -1,0 +1,161 @@
+.account-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #f8f2e5;
+  color: #292b22;
+  font-family: Arial, sans-serif;
+}
+
+.account-panel {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px;
+  background: #fff;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: bold;
+  color: #292b22;
+  text-decoration: none;
+}
+
+.brand span {
+  color: #ac080c;
+}
+
+.account-caption {
+  margin: 24px 0 8px;
+  font-size: 12px;
+  color: #686868;
+}
+
+.account-panel h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.page-copy {
+  margin: 10px 0 24px;
+  color: #686868;
+}
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-weight: bold;
+}
+
+.form-field input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  background: #fff;
+  border: 1px solid #e4e4e4;
+  border-radius: 4px;
+  color: #292b22;
+  font: inherit;
+}
+
+.form-feedback {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.form-error,
+.form-notice {
+  margin: 0;
+  padding: 8px;
+}
+
+.form-error {
+  color: #ac080c;
+}
+
+.form-notice {
+  background: #f8f2e5;
+  color: #292b22;
+}
+
+.submit-button {
+  height: 44px;
+  margin-top: 8px;
+  background: #ac080c;
+  border: 0;
+  border-radius: 4px;
+  color: #fff;
+  font: inherit;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: #870609;
+}
+
+.submit-button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.submit-button:focus-visible,
+.other-account a:focus-visible,
+.brand:focus-visible {
+  outline: 2px solid #638510;
+  outline-offset: 2px;
+}
+
+.loading-mark {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: middle;
+  border: 2px solid #fff;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+.other-account {
+  margin: 20px 0 0;
+  color: #686868;
+  text-align: center;
+}
+
+.other-account a {
+  color: #ac080c;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.other-account a:hover {
+  text-decoration: underline;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 480px) {
+  .account-panel {
+    padding: 24px;
+  }
+}

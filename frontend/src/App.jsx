@@ -1,6 +1,1 @@
-import OrderHistory from './pages/OrderHistory'
-import './App.css'
-
-export default function App() {
-  return <OrderHistory />
-}
+git add frontend/src/App.jsx
