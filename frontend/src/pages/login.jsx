@@ -31,12 +31,21 @@ function Login({ onNavigate }) {
     setLoading(true)
 
     try {
-      const result = await submitAuthRequest(
-        '/api/auth/login',
-        { email: email.trim(), password },
-        'logged in',
-      )
-      setMessage(result.message)
+     const result = await submitAuthRequest(
+  '/api/auth/login',
+  { email: email.trim(), password },
+  'Login successful',
+)
+
+if (!result.token) {
+  throw new Error('Login succeeded, but no authentication token was returned.')
+}
+
+localStorage.setItem('token', result.token)
+localStorage.setItem('user', JSON.stringify(result.user))
+
+setMessage('Login successful')
+onNavigate('home')
     } catch (requestError) {
       setError(requestError.message || 'Unable to sign in right now. Please try again.')
     } finally {
