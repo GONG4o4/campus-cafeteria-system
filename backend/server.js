@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const pool = require("./db");
 require("dotenv").config();
 
@@ -12,8 +13,14 @@ const {
 } = require("./middleware/authMiddleware");
 
 const app = express();
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
 app.use(express.json());
+
 
 app.use("/api/auth", auth);
 app.use("/api/auth", authTest);

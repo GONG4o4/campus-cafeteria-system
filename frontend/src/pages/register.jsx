@@ -3,7 +3,8 @@ import { isValidEmail, submitAuthRequest } from '../authApi.js'
 import './login.css'
 
 function Register({ onNavigate }) {
-  const [fullName, setFullName] = useState('')
+  const [fname, setFname] = useState('')
+  const [lname, setLname] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -19,10 +20,10 @@ function Register({ onNavigate }) {
     setError('')
     setMessage('')
 
-    if (!fullName.trim()) {
-      setError('Please enter your full name.')
-      return
-    }
+   if (!fname.trim() || !lname.trim()) {
+  setError('Please enter your first and last name.')
+  return
+}
 
     if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
       setError('Please complete all fields.')
@@ -43,9 +44,14 @@ function Register({ onNavigate }) {
     setLoading(true)
     try {
       const result = await submitAuthRequest(
-        '/api/auth/register',
-        { name: fullName.trim(), email: email.trim(), password },
-        'Demo only: registration request checked locally. No account was created.',
+        '/api/auth/register', 
+  {
+    fname: fname.trim(),
+    lname: lname.trim(),
+    email: email.trim(),
+    password,
+  },
+        'Account created successfully.',
       )
       setMessage(result.message)
     } catch (requestError) {
@@ -70,18 +76,33 @@ function Register({ onNavigate }) {
         <p className="page-copy">Join the campus community and get started.</p>
 
         <form className="account-form" onSubmit={handleSubmit}>
-          <div className="form-field">
-            <label htmlFor="register-name">Full name</label>
-            <input
-              id="register-name"
-              type="text"
-              autoComplete="name"
-              placeholder="Your full name"
-              value={fullName}
-              onChange={(event) => setFullName(event.target.value)}
-              required
-            />
-          </div>
+          
+<div className="form-field">
+  <label htmlFor="register-fname">First name</label>
+  <input
+    id="register-fname"
+    type="text"
+    autoComplete="given-name"
+    placeholder="Your first name"
+    value={fname}
+    onChange={(event) => setFname(event.target.value)}
+    required
+  />
+</div>
+
+<div className="form-field">
+  <label htmlFor="register-lname">Last name</label>
+  <input
+    id="register-lname"
+    type="text"
+    autoComplete="family-name"
+    placeholder="Your last name"
+    value={lname}
+    onChange={(event) => setLname(event.target.value)}
+    required
+  />
+</div>
+
 
           <div className="form-field">
             <label htmlFor="register-email">Email</label>
