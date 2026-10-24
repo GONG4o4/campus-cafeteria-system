@@ -14,14 +14,13 @@
   display: block;
   margin: 0 28px 40px;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 20px;
+  font-weight: bold;
   line-height: 1.6;
 }
 
-.cafeteria-brand strong {
-  display: block;
+.cafeteria-brand span {
   color: #ac080c;
-  font-size: 20px;
 }
 
 .sidebar-link {
@@ -44,7 +43,47 @@
 }
 
 .page-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
   margin-bottom: 28px;
+}
+
+.orders-refresh, .orders-logout {
+  padding: 10px 16px;
+  border: 1px solid #ac080c;
+  border-radius: 4px;
+  background: white;
+  color: #ac080c;
+  font-size: 13px;
+}
+
+.orders-refresh:hover, .orders-logout:hover {
+  background: #f8f2e5;
+}
+
+.orders-refresh:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.orders-logout {
+  margin: 24px;
+}
+
+.orders-updated {
+  color: #686868;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.orders-error {
+  padding: 12px;
+  background: #f8f2e5;
+  color: #ac080c;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .page-intro h1 {
@@ -434,6 +473,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+    flex-wrap: wrap;
     padding: 16px 20px;
     border-right: 0;
     border-bottom: 1px solid #e4e4e4;
@@ -441,11 +481,16 @@
 
   .cafeteria-brand {
     margin: 0;
-    font-size: 12px;
+    font-size: 20px;
   }
 
-  .cafeteria-brand strong {
-    font-size: 16px;
+  .orders-logout {
+    margin: 0;
+  }
+
+  .page-intro {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .sidebar-link {
