@@ -39,13 +39,6 @@ export function filterOrders(orders, filter) {
   })
 }
 
-export function getOrderTotal(order) {
-  return order.items.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0,
-  )
-}
-
 export const formatMoney = (amount) =>
   new Intl.NumberFormat('en-PH', {
     style: 'currency',
