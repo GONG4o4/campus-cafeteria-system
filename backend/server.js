@@ -6,6 +6,7 @@ require("dotenv").config();
 const auth = require("./routes/auth");
 const authTest = require("./routes/authTest");
 const menu = require("./routes/menu");
+const orders = require("./routes/orders")
 
 const {
     authenticateToken,
@@ -25,6 +26,7 @@ app.use(express.json());
 app.use("/api/auth", auth);
 app.use("/api/auth", authTest);
 app.use("/api/menu", menu);
+app.use("/api/orders", orders);
 
 app.get("/api/health", (req, res) => {
     res.json({ message: "Backend is working" });
