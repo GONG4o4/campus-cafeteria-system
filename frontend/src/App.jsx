@@ -11,11 +11,26 @@ import OrderConfirmation from './pages/OrderConfirmation.jsx'
 import CafeteriaLayout from './components/CafeteriaLayout.jsx'
 import { useCart } from './hooks/useCart'
 import { verifyToken } from './authApi.js'
-import mockOrders from './data/mockOrders.js'
 import './App.css'
 import './student.css'
 
-const protectedPaths = ['/home', '/cart', '/checkout', '/orders', '/order-preview']
+const protectedPaths = ['/home', '/cart', '/checkout', '/orders']
+
+function isConfirmationPath(path) {
+  return /^\/order-confirmation\/[1-9]\d*$/.test(path)
+}
+
+function needsAuthentication(path) {
+  return protectedPaths.includes(path) || isConfirmationPath(path)
+}
+
+function getPage(path) {
+  if (isConfirmationPath(path)) {
+    return 'confirmation'
+  }
+
+  return pages[path] || 'login'
+}
 
 const pages = {
   '/': 'landing',
@@ -24,7 +39,6 @@ const pages = {
   '/cart': 'cart',
   '/checkout': 'checkout',
   '/orders': 'orders',
-  '/order-preview': 'order-preview',
   '/register': 'register',
 }
 
@@ -35,10 +49,13 @@ function App() {
     changeQuantity,
     removeItem,
     clearCart,
+    removeOrderedItems,
     itemCount,
     total,
     checkoutItems,
   } = useCart()
+
+  const [confirmedOrder, setConfirmedOrder] = useState(null)
 
   const [page, setPage] = useState(() => {
     const path = window.location.pathname
@@ -55,7 +72,7 @@ function App() {
       return 'register'
     }
 
-    if (protectedPaths.includes(path) && localStorage.getItem('token')) {
+    if (needsAuthentication(path) && localStorage.getItem('token')) {
       return 'checking'
     }
 
@@ -63,12 +80,12 @@ function App() {
   })
 
   const [checkingToken, setCheckingToken] = useState(
-    protectedPaths.includes(window.location.pathname) &&
+    needsAuthentication(window.location.pathname) &&
       Boolean(localStorage.getItem('token')),
   )
 
   useEffect(() => {
-    if (!protectedPaths.includes(window.location.pathname)) {
+    if (!needsAuthentication(window.location.pathname)) {
       return
     }
 
@@ -91,7 +108,7 @@ function App() {
         }
 
         if (valid) {
-          setPage(pages[window.location.pathname])
+          setPage(getPage(window.location.pathname))
         } else {
           localStorage.removeItem('token')
           localStorage.removeItem('user')
@@ -123,11 +140,11 @@ function App() {
     function handleBack() {
       const path = window.location.pathname
 
-      if (protectedPaths.includes(path) && !localStorage.getItem('token')) {
+      if (needsAuthentication(path) && !localStorage.getItem('token')) {
         setPage('login')
         window.history.replaceState({}, '', '/login')
       } else {
-        setPage(pages[path] || 'login')
+        setPage(getPage(path))
       }
     }
 
@@ -141,7 +158,7 @@ function App() {
       nextPage = 'menu'
     }
 
-    const needsLogin = ['cart', 'checkout', 'orders', 'order-preview'].includes(nextPage)
+    const needsLogin = ['cart', 'checkout', 'orders'].includes(nextPage)
 
     if (needsLogin && !localStorage.getItem('token')) {
       nextPage = 'login'
@@ -149,6 +166,7 @@ function App() {
 
     if (nextPage === 'login') {
       clearCart()
+      setConfirmedOrder(null)
       localStorage.removeItem('token')
       localStorage.removeItem('user')
     }
@@ -164,10 +182,21 @@ function App() {
       menu: '/menu',
       cart: '/cart',
       checkout: '/checkout',
-      'order-preview': '/order-preview',
     }
 
     window.history.pushState({}, '', paths[nextPage] || '/login')
+  }
+
+  function handleOrderPlaced(order, selections, token) {
+    if (!token || token !== localStorage.getItem('token')) {
+      return
+    }
+
+    setConfirmedOrder(order)
+    removeOrderedItems(selections)
+    setPage('confirmation')
+    window.history.pushState({}, '', `/order-confirmation/${order.order_id}`)
+    window.scrollTo(0, 0)
   }
 
   function handleAddToCart(item) {
@@ -196,11 +225,18 @@ function App() {
     'cart',
     'checkout',
     'orders',
-    'order-preview',
+    'confirmation',
   ].includes(page)
 
   if (!isStudentPage) {
     return <Login onNavigate={handleNavigate} />
+  }
+
+  const confirmationId = Number(window.location.pathname.split('/').pop())
+  let receipt = null
+
+  if (confirmedOrder?.order_id === confirmationId) {
+    receipt = confirmedOrder
   }
 
   return (
@@ -229,16 +265,18 @@ function App() {
           checkoutItems={checkoutItems}
           total={total}
           onNavigate={handleNavigate}
+          onOrderPlaced={handleOrderPlaced}
         />
       )}
 
       {page === 'orders' && <OrderHistory />}
 
-      {page === 'order-preview' && (
+      {page === 'confirmation' && (
         <OrderConfirmation
-          order={mockOrders[2]}
+          key={confirmationId}
+          order={receipt}
+          orderId={confirmationId}
           onNavigate={handleNavigate}
-          preview
         />
       )}
     </CafeteriaLayout>

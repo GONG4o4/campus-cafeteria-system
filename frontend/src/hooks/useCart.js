@@ -54,12 +54,29 @@ export function useCart() {
     setCart([])
   }
 
+  function removeOrderedItems(selections) {
+    setCart((previous) => {
+      return previous.map((item) => {
+        const orderedItem = selections.find((selection) => {
+          return selection.menu_item_id === item.menu_item_id
+        })
+
+        if (orderedItem) {
+          return { ...item, quantity: item.quantity - orderedItem.quantity }
+        }
+
+        return item
+      }).filter((item) => item.quantity > 0)
+    })
+  }
+
   return {
     cart,
     addItem,
     changeQuantity,
     removeItem,
     clearCart,
+    removeOrderedItems,
     itemCount: cart.reduce((count, item) => count + item.quantity, 0),
     total: getCartTotal(cart),
     checkoutItems: getCheckoutItems(cart),

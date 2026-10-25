@@ -13,7 +13,7 @@
 }
 
 .confirmation-queue p{
-    font-size: 16 px;
+    font-size: 16px;
     color: #A90409;
     margin-bottom: 12px;
 }
@@ -52,4 +52,11 @@
 .order-confirmation > ul li {
     padding: 8px 0;
     color: #40550F;
+}
+
+.confirmation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 24px;
 }

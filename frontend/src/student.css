@@ -282,6 +282,18 @@
   white-space: nowrap;
 }
 
+.checkout-note {
+  color: #686868;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.checkout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 
 @media (max-width: 1150px) {
   .student-page {
