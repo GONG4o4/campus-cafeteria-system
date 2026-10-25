@@ -1,4 +1,3 @@
-import MealCarousel from '../components/landing/MealCarousel'
 import './LandingPage.css'
 
 const benefits = [
@@ -120,7 +119,15 @@ export default function LandingPage({ onNavigate }) {
               </p>
             </div>
 
-            <MealCarousel />
+            <figure className="landing-visual">
+              <img
+                src="/image.png"
+                alt="Rice topped with burger patties and mushroom gravy"
+                width="600"
+                height="480"
+              />
+              <figcaption>Fresh Meals, Happy Students</figcaption>
+            </figure>
           </div>
         </section>
 

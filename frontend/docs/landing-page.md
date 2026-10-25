@@ -9,10 +9,9 @@ The landing page loads without a login, backend server, database, or order/queue
   workflow, and project footer. Repeated cards use arrays and `map`.
 - `src/pages/LandingPage.css`: scoped styles using the existing colors, Arial,
   shared button classes, Flexbox, Grid, and media queries. No `:root` variables.
-- `src/components/landing/MealCarousel.jsx`: displays four user-provided local
-  meal photos with touch swipe, mouse drag, previous/next arrows, slide dots, and
-  left/right keyboard controls. It uses `useState` and `useRef`, with no new library.
-  The photos are hero visuals, not menu or availability records.
+- `public/image.png`: one user-provided meal photo, displayed in a static figure
+  with the caption "Fresh Meals, Happy Students". There are no carousel controls
+  or decorative dots. The photo is a hero visual, not a menu or availability record.
 - `src/App.jsx`: maps `/` to the landing page and makes `/menu` public using the
   existing navigation approach. React Router is not installed or added.
 - `CafeteriaLayout.jsx`: includes Home and displays Log in for public visitors.
@@ -41,10 +40,7 @@ authentication, checkout submission, queue generation, APIs, or database behavio
 - `npm run lint`: passed.
 - `npm run build`: passed.
 - Production-build browser checks passed at 1280×900, 768×1024, 390×844, and
-  320×700: no horizontal overflow; all four photos loaded; all sections rendered.
-- Carousel arrows, first/last wraparound, dots, keyboard controls, mouse drag, and
-  real touch swipe passed browser checks. Reduced-motion preference removes the
-  slide transition. Slides change manually; there is no automatic timer.
+  320×700: no horizontal overflow; the photo loaded; all sections rendered.
 - Landing made zero API requests. No order/queue calls or order submissions were
   made during the browser checks.
 - Home, Browse Menu, Log In, Register, Get Started, account brand links, and
