@@ -1,0 +1,164 @@
+.student-shell {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 100vh;
+  background: #fff;
+}
+
+.student-sidebar {
+  position: sticky;
+  top: 0;
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  padding: 28px 16px;
+  border-right: 1px solid #e4e4e4;
+  background: #fff;
+}
+
+.student-sidebar-top {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 0 12px 28px;
+}
+
+.student-brand {
+  color: #292b22;
+  font-size: 13px;
+  line-height: 1.5;
+  text-decoration: none;
+}
+
+.student-brand strong {
+  display: block;
+  color: #ac080c;
+  font-size: 20px;
+}
+
+.student-nav {
+  display: grid;
+  gap: 6px;
+}
+
+.student-nav-link {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  color: #55574f;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.student-nav-link:hover {
+  background: #f8f2e5;
+  color: #ac080c;
+}
+
+.student-nav-link[aria-current='page'] {
+  background: #f8f2e5;
+  color: #ac080c;
+  font-weight: 600;
+}
+
+.student-cart-count {
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ac080c;
+  color: white;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.student-logout {
+  align-self: flex-start;
+  min-height: 40px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: #686868;
+  font-size: 13px;
+  text-align: left;
+}
+
+.student-logout:hover {
+  color: #ac080c;
+}
+
+.student-main {
+  width: 100%;
+  min-width: 0;
+  padding: 40px;
+}
+
+.student-content {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+@media (max-width: 760px) {
+  .student-shell {
+    display: block;
+  }
+
+  .student-sidebar {
+    position: static;
+    display: block;
+    height: auto;
+    padding: 12px 16px 0;
+    border-right: 0;
+    border-bottom: 1px solid #e4e4e4;
+  }
+
+  .student-sidebar-top {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 4px 10px;
+  }
+
+  .student-brand {
+    font-size: 11px;
+  }
+
+  .student-brand strong {
+    font-size: 16px;
+  }
+
+  .student-logout {
+    min-height: 44px;
+    padding: 8px;
+  }
+
+  .student-nav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .student-nav-link {
+    min-height: 48px;
+    justify-content: center;
+    padding: 8px 4px;
+    font-size: 13px;
+  }
+
+  .student-main {
+    padding: 28px 20px;
+  }
+}
+
+@media (max-width: 380px) {
+  .student-main {
+    padding: 24px 16px;
+  }
+}

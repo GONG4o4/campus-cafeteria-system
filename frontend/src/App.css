@@ -6,7 +6,6 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   margin: 0;
-  min-width: 320px;
 }
 
 * {
@@ -21,6 +20,16 @@ button {
   font: inherit;
   cursor: pointer;
 }
+button:disabled {
+  cursor: not-allowed;
+}
+input {
+  max-width: 100%;
+}
+input:focus-visible {
+  outline: 3px solid #638510;
+  outline-offset: 2px;
+}
 a {
   color: inherit;
 }
@@ -29,6 +38,13 @@ a:focus-visible,
 summary:focus-visible {
   outline: 3px solid #638510;
   outline-offset: 4px;
+}
+.app-loading {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  color: #55574f;
 }
 .sr-only {
   position: absolute;

@@ -1,46 +1,8 @@
-.cafeteria-layout {
-  display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
-  min-height: 100vh;
-  background: white;
-}
-
-.cafeteria-sidebar {
-  padding: 36px 0;
-  border-right: 1px solid #e4e4e4;
-}
-
-.cafeteria-brand {
-  display: block;
-  margin: 0 28px 40px;
-  text-decoration: none;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.cafeteria-brand strong {
-  display: block;
-  color: #ac080c;
-  font-size: 20px;
-}
-
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 24px;
-  border-right: 3px solid #ac080c;
-  background: #f8f2e5;
-  color: #ac080c;
-  text-decoration: none;
-  font-size: 14px;
-}
-
 .order-history {
   width: 100%;
-  max-width: 1280px;
+  max-width: none;
   min-width: 0;
-  padding: 40px;
+  padding: 0;
 }
 
 .page-intro {
@@ -403,14 +365,6 @@
 }
 
 @media (max-width: 1150px) {
-  .cafeteria-layout {
-    grid-template-columns: 180px minmax(0, 1fr);
-  }
-
-  .order-history {
-    padding: 32px 24px;
-  }
-
   .order-card {
     grid-template-columns: 130px 55px minmax(0, 1fr) 80px;
     column-gap: 16px;
@@ -425,40 +379,6 @@
 }
 
 @media (max-width: 760px) {
-  .cafeteria-layout {
-    display: block;
-  }
-
-  .cafeteria-sidebar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 16px 20px;
-    border-right: 0;
-    border-bottom: 1px solid #e4e4e4;
-  }
-
-  .cafeteria-brand {
-    margin: 0;
-    font-size: 12px;
-  }
-
-  .cafeteria-brand strong {
-    font-size: 16px;
-  }
-
-  .sidebar-link {
-    padding: 10px 0;
-    border-right: 0;
-    background: white;
-    font-size: 12px;
-  }
-
-  .order-history {
-    padding: 28px 20px;
-  }
-
   .order-filters {
     justify-content: space-between;
     gap: 8px;
