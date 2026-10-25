@@ -7,13 +7,16 @@ import Menu from './pages/Menu.jsx'
 import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
 import LandingPage from './pages/LandingPage.jsx'
+import OrderConfirmation from './pages/OrderConfirmation.jsx'
 import CafeteriaLayout from './components/CafeteriaLayout.jsx'
 import { useCart } from './hooks/useCart'
 import { verifyToken } from './authApi.js'
+import mockOrders from './data/mockOrders.js'
 import './App.css'
 import './student.css'
 
-const protectedPaths = ['/home', '/cart', '/checkout', '/orders']
+const protectedPaths = ['/home', '/cart', '/checkout', '/orders', '/order-preview']
+
 const pages = {
   '/': 'landing',
   '/home': 'menu',
@@ -21,6 +24,7 @@ const pages = {
   '/cart': 'cart',
   '/checkout': 'checkout',
   '/orders': 'orders',
+  '/order-preview': 'order-preview',
   '/register': 'register',
 }
 
@@ -35,6 +39,7 @@ function App() {
     total,
     checkoutItems,
   } = useCart()
+
   const [page, setPage] = useState(() => {
     const path = window.location.pathname
 
@@ -97,6 +102,7 @@ function App() {
         if (cancelled) {
           return
         }
+
         setPage('login')
         window.history.replaceState({}, '', '/login')
       } finally {
@@ -116,6 +122,7 @@ function App() {
   useEffect(() => {
     function handleBack() {
       const path = window.location.pathname
+
       if (protectedPaths.includes(path) && !localStorage.getItem('token')) {
         setPage('login')
         window.history.replaceState({}, '', '/login')
@@ -123,7 +130,9 @@ function App() {
         setPage(pages[path] || 'login')
       }
     }
+
     window.addEventListener('popstate', handleBack)
+
     return () => window.removeEventListener('popstate', handleBack)
   }, [])
 
@@ -132,7 +141,7 @@ function App() {
       nextPage = 'menu'
     }
 
-    const needsLogin = ['cart', 'checkout', 'orders'].includes(nextPage)
+    const needsLogin = ['cart', 'checkout', 'orders', 'order-preview'].includes(nextPage)
 
     if (needsLogin && !localStorage.getItem('token')) {
       nextPage = 'login'
@@ -155,6 +164,7 @@ function App() {
       menu: '/menu',
       cart: '/cart',
       checkout: '/checkout',
+      'order-preview': '/order-preview',
     }
 
     window.history.pushState({}, '', paths[nextPage] || '/login')
@@ -181,7 +191,13 @@ function App() {
     return <LandingPage onNavigate={handleNavigate} />
   }
 
-  const isStudentPage = ['menu', 'cart', 'checkout', 'orders'].includes(page)
+  const isStudentPage = [
+    'menu',
+    'cart',
+    'checkout',
+    'orders',
+    'order-preview',
+  ].includes(page)
 
   if (!isStudentPage) {
     return <Login onNavigate={handleNavigate} />
@@ -195,6 +211,7 @@ function App() {
       authenticated={Boolean(localStorage.getItem('token'))}
     >
       {page === 'menu' && <Menu onAdd={handleAddToCart} />}
+
       {page === 'cart' && (
         <Cart
           cart={cart}
@@ -205,6 +222,7 @@ function App() {
           onNavigate={handleNavigate}
         />
       )}
+
       {page === 'checkout' && (
         <Checkout
           cart={cart}
@@ -213,7 +231,16 @@ function App() {
           onNavigate={handleNavigate}
         />
       )}
+
       {page === 'orders' && <OrderHistory />}
+
+      {page === 'order-preview' && (
+        <OrderConfirmation
+          order={mockOrders[2]}
+          onNavigate={handleNavigate}
+          preview
+        />
+      )}
     </CafeteriaLayout>
   )
 }
