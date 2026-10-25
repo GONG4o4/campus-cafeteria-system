@@ -1,5 +1,11 @@
 
 function formatOrder(order) {
+  let createdAt = order.ordered_at
+
+  if (!/(Z|[+-]\d{2}:\d{2})$/i.test(createdAt)) {
+    createdAt += '+08:00'
+  }
+
   return {
     id: order.order_id,
     reference: `Order #${order.order_id}`,
@@ -7,7 +13,7 @@ function formatOrder(order) {
     status: order.status,
     total: Number(order.total_amount),
 
-    createdAt: `${order.ordered_at}+08:00`,
+    createdAt,
     items: order.items.map((item) => ({
       id: item.order_item_id,
       name: item.name,
@@ -48,15 +54,41 @@ export async function getOrders(id, signal) {
   if (response.status === 401) {
     throw new Error('Your session has expired. Please sign in again.')
   }
-  if (!response.ok) {
-    const body = await response.json()
-    throw new Error(body.message || 'Unable to load orders. Please try again.')
+
+  const contentType = response.headers.get('content-type') || ''
+
+  if (!contentType.includes('application/json')) {
+    if (response.status === 404) {
+      throw new Error('Order history is not available on the backend yet.')
+    }
+
+    throw new Error('The order service returned an unexpected response. Please try again.')
   }
 
-  const data = await response.json()
+  let data
+
+  try {
+    data = await response.json()
+  } catch (error) {
+    throw new Error('The order service returned an unreadable response.', {
+      cause: error,
+    })
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load orders. Please try again.')
+  }
 
   if (id) {
+    if (!data || !Array.isArray(data.items)) {
+      throw new Error('The order service returned incomplete order details.')
+    }
+
     return formatOrder(data)
+  }
+
+  if (!Array.isArray(data) || data.some((order) => !order || !Array.isArray(order.items))) {
+    throw new Error('The order service returned an invalid order list.')
   }
 
   return data.map(formatOrder)

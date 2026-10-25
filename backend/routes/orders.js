@@ -4,6 +4,67 @@ const {authenticateToken, requireRole} = require ("../middleware/authMiddleware"
 
 const router = express.Router();
 
+const orderSelect = `
+    SELECT o.order_id, o.queue_number, o.status, o.total_amount, o.order_date,
+           TO_CHAR(o.ordered_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ordered_at,
+           COALESCE((
+               SELECT json_agg(json_build_object(
+                   'order_item_id', i.order_item_id,
+                   'menu_item_id', i.menu_item_id,
+                   'name', m.name,
+                   'quantity', i.quantity,
+                   'unit_price', i.unit_price,
+                   'subtotal', i.subtotal
+               ) ORDER BY i.order_item_id)
+               FROM order_items i
+               JOIN menu_items m ON m.menu_item_id = i.menu_item_id
+               WHERE i.order_id = o.order_id
+           ), '[]'::json) AS items
+    FROM orders o
+    WHERE o.user_id = $1`;
+
+router.get("/", authenticateToken, requireRole("student"), async (req, res) => {
+    try {
+        const result = await pool.query(
+            `${orderSelect} ORDER BY o.ordered_at DESC, o.order_id DESC`,
+            [req.user.user_id]
+        );
+
+        return res.json(result.rows);
+    } catch (error) {
+        console.error("Order history failed:", error.message);
+        return res.status(500).json({
+            message: "Unable to load your orders. Please try again."
+        });
+    }
+});
+
+router.get("/:id", authenticateToken, requireRole("student"), async (req, res) => {
+    const id = Number(req.params.id);
+
+    if (!/^[1-9]\d*$/.test(req.params.id) || !Number.isSafeInteger(id) || id > 2147483647) {
+        return res.status(400).json({ message: "Invalid order ID" });
+    }
+
+    try {
+        const result = await pool.query(
+            `${orderSelect} AND o.order_id = $2`,
+            [req.user.user_id, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+
+        return res.json(result.rows[0]);
+    } catch (error) {
+        console.error("Order details failed:", error.message);
+        return res.status(500).json({
+            message: "Unable to load this order. Please try again."
+        });
+    }
+});
+
 const toCents = (price) => {
      const [whole, fraction = ""] = String(price).split(".");
      return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
