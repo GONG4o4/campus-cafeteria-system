@@ -59,7 +59,7 @@ onNavigate('home')
       <section className="account-panel">
         <a className="brand" href="/" onClick={(event) => {
           event.preventDefault()
-          onNavigate('login')
+          onNavigate('landing')
         }}>
           Que<span>u</span>
         </a>

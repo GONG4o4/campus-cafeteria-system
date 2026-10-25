@@ -5,8 +5,10 @@ export default function CafeteriaLayout({
   itemCount,
   onNavigate,
   children,
+  authenticated = true,
 }) {
   const links = [
+    { page: 'landing', path: '/', label: 'Home' },
     { page: 'menu', label: 'Menu' },
     { page: 'cart', label: `Cart (${itemCount})` },
     { page: 'orders', label: 'Order history' },
@@ -40,7 +42,7 @@ export default function CafeteriaLayout({
               <a
                 key={link.page}
                 className="sidebar-link"
-                href={`/${link.page}`}
+                href={link.path || `/${link.page}`}
                 aria-current={isActive ? 'page' : undefined}
                 onClick={(event) => handleLinkClick(event, link.page)}
               >
@@ -55,7 +57,7 @@ export default function CafeteriaLayout({
           variant="secondary"
           onClick={() => onNavigate('login')}
         >
-          Log out
+          {authenticated ? 'Log out' : 'Log in'}
         </Button>
       </aside>
       {children}
