@@ -1,57 +1,110 @@
 import OrderCard from '../components/orders/OrderCard'
 import OrderFilters from '../components/orders/OrderFilters'
-import { mockOrders } from '../data/mockOrders'
 import { useOrderHistory } from '../hooks/useOrderHistory'
+import Button from '../components/ui/Button'
+import { Alert, Loading } from '../components/ui/Feedback'
 import './OrderHistory.css'
 
-export default function OrderHistory({ orders = mockOrders }) {
-  const { activeFilter, setActiveFilter, visibleOrders, filters } =
-    useOrderHistory(orders)
+export default function OrderHistory() {
+  const {
+    activeFilter,
+    setActiveFilter,
+    visibleOrders,
+    filters,
+    loading,
+    error,
+    lastUpdated,
+    refreshOrders,
+    loadDetails,
+    detailStates,
+  } = useOrderHistory()
+
+  const selectedFilter = filters.find(
+    (filter) => filter.id === activeFilter,
+  )
+  let updatedTime = ''
+
+  if (lastUpdated) {
+    updatedTime = lastUpdated.toLocaleTimeString('en-PH', {
+      timeZone: 'Asia/Manila',
+    })
+  }
 
   return (
-    <section className="order-history" id="order-history">
+    <main className="order-history" id="order-history">
       <div className="page-intro">
-        <h1>Order history</h1>
-        <p>View your orders and pickup status.</p>
-      </div>
-      <OrderFilters
-        filters={filters}
-        activeFilter={activeFilter}
-        onFilterChange={setActiveFilter}
-      />
-      <div className="orders-list-heading">
-        <h2>{filters.find((filter) => filter.id === activeFilter).label}</h2>
-        <p role="status" aria-live="polite">
-          {visibleOrders.length}{' '}
-          {visibleOrders.length === 1 ? 'order' : 'orders'}
-        </p>
-      </div>
-      {visibleOrders.length > 0 ? (
-        <div className="orders-list">
-          {visibleOrders.map((order) => (
-            <OrderCard key={order.id} order={order} />
-          ))}
+        <div>
+          <h1>Order history</h1>
+          <p>View your orders and pickup status.</p>
         </div>
-      ) : (
-        <div className="orders-empty">
-          <h2>
-            No {activeFilter === 'all' ? '' : `${activeFilter} `}orders yet
-          </h2>
-          <p>
-            {activeFilter === 'all'
-              ? 'Your orders will appear here once you place one.'
-              : 'Orders with this status will appear here.'}
-          </p>
-          {activeFilter !== 'all' && (
-            <button type="button" onClick={() => setActiveFilter('all')}>
-              See all orders
-            </button>
-          )}
-        </div>
+        <Button variant="secondary" onClick={refreshOrders} disabled={loading}>
+          {loading ? 'Refreshing...' : 'Refresh orders'}
+        </Button>
+      </div>
+
+      {error && (
+        <Alert error>
+          {error} Use Refresh orders to retry.
+        </Alert>
       )}
-      <footer className="orders-footer">
-        Sample orders and orders placed in this demo session.
-      </footer>
-    </section>
+
+      {loading && <Loading>Loading your orders...</Loading>}
+
+      {lastUpdated && (
+        <p className="orders-updated">
+          Last updated: {updatedTime}. Refresh to check the latest status.
+        </p>
+      )}
+
+      {!loading && !error && (
+        <>
+          <OrderFilters
+            filters={filters}
+            activeFilter={activeFilter}
+            onFilterChange={setActiveFilter}
+          />
+
+          <div className="orders-list-heading">
+            <h2>{selectedFilter?.label ?? 'Orders'}</h2>
+            <p role="status" aria-live="polite">
+              {visibleOrders.length}{' '}
+              {visibleOrders.length === 1 ? 'order' : 'orders'}
+            </p>
+          </div>
+
+          {visibleOrders.length > 0 ? (
+            <div className="orders-list">
+              {visibleOrders.map((order) => (
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  onLoadDetails={() => loadDetails(order.id)}
+                  detailState={detailStates[order.id]}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="orders-empty">
+              <h2>
+                No {activeFilter === 'all' ? '' : `${activeFilter} `}orders yet
+              </h2>
+              <p>
+                {activeFilter === 'all'
+                  ? 'Your orders will appear here once you place one.'
+                  : 'Orders with this status will appear here.'}
+              </p>
+              {activeFilter !== 'all' && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setActiveFilter('all')}
+                >
+                  See all orders
+                </Button>
+              )}
+            </div>
+          )}
+        </>
+      )}
+    </main>
   )
 }
