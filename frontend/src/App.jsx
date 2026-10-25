@@ -6,21 +6,25 @@ import OrderHistory from './pages/OrderHistory.jsx'
 import Menu from './pages/Menu.jsx'
 import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
+import LandingPage from './pages/LandingPage.jsx'
+import OrderConfirmation from './pages/OrderConfirmation.jsx'
 import CafeteriaLayout from './components/CafeteriaLayout.jsx'
 import { useCart } from './hooks/useCart'
 import { verifyToken } from './authApi.js'
+import mockOrders from './data/mockOrders.js'
 import './App.css'
 import './student.css'
-import OrderConfirmation from './pages/OrderConfirmation.jsx'
-import mockOrders from './data/mockOrders.js'
-const protectedPaths = ['/home', '/menu', '/cart', '/checkout', '/orders', '/order-preview']
+
+const protectedPaths = ['/home', '/cart', '/checkout', '/orders', '/order-preview']
+
 const pages = {
+  '/': 'landing',
   '/home': 'menu',
   '/menu': 'menu',
   '/cart': 'cart',
   '/checkout': 'checkout',
   '/orders': 'orders',
-  '/order-preview' : 'order-preview',
+  '/order-preview': 'order-preview',
   '/register': 'register',
 }
 
@@ -35,8 +39,17 @@ function App() {
     total,
     checkoutItems,
   } = useCart()
+
   const [page, setPage] = useState(() => {
     const path = window.location.pathname
+
+    if (path === '/') {
+      return 'landing'
+    }
+
+    if (path === '/menu') {
+      return 'menu'
+    }
 
     if (path === '/register') {
       return 'register'
@@ -89,6 +102,7 @@ function App() {
         if (cancelled) {
           return
         }
+
         setPage('login')
         window.history.replaceState({}, '', '/login')
       } finally {
@@ -108,6 +122,7 @@ function App() {
   useEffect(() => {
     function handleBack() {
       const path = window.location.pathname
+
       if (protectedPaths.includes(path) && !localStorage.getItem('token')) {
         setPage('login')
         window.history.replaceState({}, '', '/login')
@@ -115,7 +130,9 @@ function App() {
         setPage(pages[path] || 'login')
       }
     }
+
     window.addEventListener('popstate', handleBack)
+
     return () => window.removeEventListener('popstate', handleBack)
   }, [])
 
@@ -124,7 +141,7 @@ function App() {
       nextPage = 'menu'
     }
 
-    const needsLogin = ['menu', 'cart', 'checkout', 'orders', 'order-preview'].includes(nextPage)
+    const needsLogin = ['cart', 'checkout', 'orders', 'order-preview'].includes(nextPage)
 
     if (needsLogin && !localStorage.getItem('token')) {
       nextPage = 'login'
@@ -139,6 +156,7 @@ function App() {
     setPage(nextPage)
 
     const paths = {
+      landing: '/',
       login: '/login',
       register: '/register',
       home: '/home',
@@ -152,6 +170,15 @@ function App() {
     window.history.pushState({}, '', paths[nextPage] || '/login')
   }
 
+  function handleAddToCart(item) {
+    if (!localStorage.getItem('token')) {
+      handleNavigate('login')
+      return
+    }
+
+    addItem(item)
+  }
+
   if (checkingToken) {
     return <main style={{ padding: '2rem' }}>Checking your session...</main>
   }
@@ -160,7 +187,17 @@ function App() {
     return <Register onNavigate={handleNavigate} />
   }
 
-  const isStudentPage = ['menu', 'cart', 'checkout', 'orders', 'order-preview'].includes(page)
+  if (page === 'landing') {
+    return <LandingPage onNavigate={handleNavigate} />
+  }
+
+  const isStudentPage = [
+    'menu',
+    'cart',
+    'checkout',
+    'orders',
+    'order-preview',
+  ].includes(page)
 
   if (!isStudentPage) {
     return <Login onNavigate={handleNavigate} />
@@ -171,8 +208,10 @@ function App() {
       page={page}
       itemCount={itemCount}
       onNavigate={handleNavigate}
+      authenticated={Boolean(localStorage.getItem('token'))}
     >
-      {page === 'menu' && <Menu onAdd={addItem} />}
+      {page === 'menu' && <Menu onAdd={handleAddToCart} />}
+
       {page === 'cart' && (
         <Cart
           cart={cart}
@@ -183,6 +222,7 @@ function App() {
           onNavigate={handleNavigate}
         />
       )}
+
       {page === 'checkout' && (
         <Checkout
           cart={cart}
@@ -191,7 +231,9 @@ function App() {
           onNavigate={handleNavigate}
         />
       )}
+
       {page === 'orders' && <OrderHistory />}
+
       {page === 'order-preview' && (
         <OrderConfirmation
           order={mockOrders[2]}

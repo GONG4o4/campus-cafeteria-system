@@ -82,7 +82,6 @@ const mockOrders = [
 
 export default mockOrders;
 
-// Adapt the shared mock data to the order history view while keeping its default export.
 const orderHistoryOrders = mockOrders.map((order) => ({
   ...order,
   id: `order-${order.order_id}`,
