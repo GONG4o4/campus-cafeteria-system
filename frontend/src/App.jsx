@@ -11,14 +11,16 @@ import { useCart } from './hooks/useCart'
 import { verifyToken } from './authApi.js'
 import './App.css'
 import './student.css'
-
-const protectedPaths = ['/home', '/menu', '/cart', '/checkout', '/orders']
+import OrderConfirmation from './pages/OrderConfirmation.jsx'
+import mockOrders from './data/mockOrders.js'
+const protectedPaths = ['/home', '/menu', '/cart', '/checkout', '/orders', '/order-preview']
 const pages = {
   '/home': 'menu',
   '/menu': 'menu',
   '/cart': 'cart',
   '/checkout': 'checkout',
   '/orders': 'orders',
+  '/order-preview' : 'order-preview',
   '/register': 'register',
 }
 
@@ -122,7 +124,7 @@ function App() {
       nextPage = 'menu'
     }
 
-    const needsLogin = ['menu', 'cart', 'checkout', 'orders'].includes(nextPage)
+    const needsLogin = ['menu', 'cart', 'checkout', 'orders', 'order-preview'].includes(nextPage)
 
     if (needsLogin && !localStorage.getItem('token')) {
       nextPage = 'login'
@@ -144,6 +146,7 @@ function App() {
       menu: '/menu',
       cart: '/cart',
       checkout: '/checkout',
+      'order-preview': '/order-preview',
     }
 
     window.history.pushState({}, '', paths[nextPage] || '/login')
@@ -157,7 +160,7 @@ function App() {
     return <Register onNavigate={handleNavigate} />
   }
 
-  const isStudentPage = ['menu', 'cart', 'checkout', 'orders'].includes(page)
+  const isStudentPage = ['menu', 'cart', 'checkout', 'orders', 'order-preview'].includes(page)
 
   if (!isStudentPage) {
     return <Login onNavigate={handleNavigate} />
@@ -189,6 +192,13 @@ function App() {
         />
       )}
       {page === 'orders' && <OrderHistory />}
+      {page === 'order-preview' && (
+        <OrderConfirmation
+          order={mockOrders[2]}
+          onNavigate={handleNavigate}
+          preview
+        />
+      )}
     </CafeteriaLayout>
   )
 }

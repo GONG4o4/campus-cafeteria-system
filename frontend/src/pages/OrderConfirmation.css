@@ -1,0 +1,55 @@
+.order-confirmation {
+    max-width: 800px;
+    margin: 0 auto;
+
+}
+
+.confirmation-queue{
+    padding: 30px 20px;
+    background-color: #EDE5CC;
+    border: 2px solid #D8BE07;
+    border-radius: 16px;
+    text-align: center;
+}
+
+.confirmation-queue p{
+    font-size: 16 px;
+    color: #A90409;
+    margin-bottom: 12px;
+}
+
+.confirmation-queue strong{
+    display: block;
+    font-size: clamp(48px, 10vw, 88px);
+    font-weight: 800;
+    color: #A90409;
+}
+
+.order-confirmation > h1 {
+    color: #A90409;
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.order-confirmation > p {
+    color: #40550F;
+    margin: 12px 0;
+}
+
+.order-confirmation > h2 {
+    color: #A90409;
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+.order-confirmation > ul {
+    background-color: #EDE5CC;
+    border: 1px solid #D8BE07;
+    border-radius: 12px;
+    padding: 20px 20px 20px 40px;
+}
+
+.order-confirmation > ul li {
+    padding: 8px 0;
+    color: #40550F;
+}
