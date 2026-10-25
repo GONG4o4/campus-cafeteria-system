@@ -43,7 +43,7 @@ authentication, checkout submission, queue generation, APIs, or database behavio
   320×700: no horizontal overflow; the photo loaded; all sections rendered.
 - Landing made zero API requests. No order/queue calls or order submissions were
   made during the browser checks.
-- Home, Browse Menu, Log In, Register, Get Started, account brand links, and
+- Home, View menu, Log in, Sign up, Create account, account brand links, and
   browser Back worked. Direct menu/login/register routes also rendered.
 - A guest could browse the menu and was directed to login when adding a meal.
   Direct guest access to the cart remained protected. Authenticated cart additions

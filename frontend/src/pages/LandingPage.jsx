@@ -3,31 +3,45 @@ import './LandingPage.css'
 const benefits = [
   {
     number: '01',
-    title: 'Browse before your break',
-    description: 'Explore the cafeteria menu and see which meals are available before deciding what to eat.',
+    title: 'See what is available',
+    description:
+      'Check the menu before heading to the cafeteria and decide what you feel like eating.',
   },
   {
     number: '02',
-    title: 'Plan your next meal',
-    description: 'Build your cart and review your selections. The pre-order flow is designed to fit around your classes.',
+    title: 'Pick your meals',
+    description:
+      'Add meals to your cart, change the quantities, and check the total before you continue.',
   },
   {
     number: '03',
-    title: 'Know when to collect',
-    description: 'The ordering flow uses a queue number to identify your order when it is ready for collection.',
+    title: 'Pick up with your number',
+    description:
+      'Once an order is confirmed, its queue number helps you identify your meal at the counter.',
   },
 ]
 
 const steps = [
-  { title: 'Browse the menu', text: 'Find a meal from the available cafeteria options.' },
-  { title: 'Log in and order', text: 'Sign in, choose your meals, and review your order.' },
-  { title: 'Receive a queue number', text: 'A confirmed pre-order is assigned a pickup number.' },
-  { title: 'Collect when ready', text: 'Use your queue number to collect at the cafeteria.' },
+  {
+    title: 'Find something to eat',
+    text: 'Take a look at the menu and choose your meals.',
+  },
+  {
+    title: 'Log in and order',
+    text: 'Sign in, check your cart, and confirm your order.',
+  },
+  {
+    title: 'Get your queue number',
+    text: 'Keep the number given after your order is confirmed.',
+  },
+  {
+    title: 'Pick up your food',
+    text: 'Head to the counter with your number when your meal is ready.',
+  },
 ]
 
 export default function LandingPage({ onNavigate }) {
   function handleLinkClick(event, page) {
-    // Keep normal browser behavior for opening a link in another tab.
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
       return
     }
@@ -65,20 +79,20 @@ export default function LandingPage({ onNavigate }) {
               href="/menu"
               onClick={(event) => handleLinkClick(event, 'menu')}
             >
-              Browse Menu
+              Menu
             </a>
             <a
               href="/login"
               onClick={(event) => handleLinkClick(event, 'login')}
             >
-              Log In
+              Log in
             </a>
             <a
               className="app-button landing-button"
               href="/register"
               onClick={(event) => handleLinkClick(event, 'register')}
             >
-              Register
+              Sign up
             </a>
           </nav>
         </div>
@@ -88,14 +102,15 @@ export default function LandingPage({ onNavigate }) {
         <section className="landing-hero" aria-labelledby="landing-title">
           <div className="landing-container landing-hero-content">
             <div className="landing-hero-copy">
-              <p className="landing-eyebrow">YOUR CAMPUS. YOUR CAFETERIA.</p>
+              <p className="landing-eyebrow">Welcome to Queu</p>
               <h1 id="landing-title">
-                A good meal.<br />
-                A better <span>campus break.</span>
+                Hungry<br />
+                <span>between classes?</span>
               </h1>
               <p className="landing-description">
-                Meet Queu, your campus cafeteria pre-order system. Explore meals,
-                plan your order, and make a little more room in your day.
+                Take a look at the cafeteria menu and find something for your
+                next break. Pick your meals and check your cart before you
+                head over.
               </p>
 
               <div className="landing-actions">
@@ -104,18 +119,18 @@ export default function LandingPage({ onNavigate }) {
                   href="/menu"
                   onClick={(event) => handleLinkClick(event, 'menu')}
                 >
-                  Browse Menu <span aria-hidden="true">→</span>
+                  View menu <span aria-hidden="true">→</span>
                 </a>
                 <a
                   className="app-button app-button--secondary landing-button"
                   href="/register"
                   onClick={(event) => handleLinkClick(event, 'register')}
                 >
-                  Get Started
+                  Create account
                 </a>
               </div>
               <p className="landing-small-note">
-                Browse freely. Sign in when you are ready to order.
+                Just looking? You can browse the menu without an account.
               </p>
             </div>
 
@@ -136,9 +151,9 @@ export default function LandingPage({ onNavigate }) {
           aria-labelledby="benefits-title"
         >
           <div className="landing-section-intro">
-            <p className="landing-eyebrow">A LITTLE LESS HASSLE</p>
-            <h2 id="benefits-title">Your next meal, a little easier.</h2>
-            <p>A simple way to connect your class schedule with your cafeteria plans.</p>
+            <p className="landing-eyebrow">Why use Queu?</p>
+            <h2 id="benefits-title">Know what you want before you get there.</h2>
+            <p>Check the menu and plan your lunch whenever you have a moment.</p>
           </div>
 
           <div className="landing-benefit-grid">
@@ -157,9 +172,9 @@ export default function LandingPage({ onNavigate }) {
         <section className="landing-workflow" aria-labelledby="workflow-title">
           <div className="landing-container">
             <div className="landing-section-intro">
-              <p className="landing-eyebrow">HOW IT WORKS</p>
-              <h2 id="workflow-title">From your next class to your next meal.</h2>
-              <p>The planned pre-order journey, in four simple steps.</p>
+              <p className="landing-eyebrow">How it works</p>
+              <h2 id="workflow-title">From picking a meal to picking it up.</h2>
+              <p>Here is how pre-ordering will work.</p>
             </div>
 
             <ol className="landing-steps">
@@ -175,8 +190,8 @@ export default function LandingPage({ onNavigate }) {
             </ol>
 
             <p className="landing-workflow-note">
-              Pre-order submission and live pickup tracking are still being
-              connected. You can browse the menu and create an account now.
+              We are still getting online orders and pickup updates ready.
+              You can browse meals and build your cart in the meantime.
             </p>
           </div>
         </section>
@@ -194,7 +209,7 @@ export default function LandingPage({ onNavigate }) {
             </a>
             <p>Campus Cafeteria Pre-order System</p>
           </div>
-          <p>A campus project, built around student life.</p>
+          <p>A student project for our campus cafeteria.</p>
         </div>
       </footer>
     </div>
