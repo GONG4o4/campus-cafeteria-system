@@ -96,7 +96,7 @@ function App() {
       window.history.replaceState({}, '', '/login')
       return
     }
-
+ 
     let cancelled = false
 
     async function checkToken() {
