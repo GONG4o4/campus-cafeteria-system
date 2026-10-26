@@ -18,8 +18,39 @@ export default function Menu({ onAdd }) {
   }
 
   function handleRetry() {
-    setReload(reload + 1)
+    setMessage('')
+    setReload((current) => current + 1)
   }
+
+  useEffect(() => {
+    function refreshMenu() {
+      setReload((current) => current + 1)
+    }
+
+    function handleVisibility() {
+      if (document.visibilityState === 'visible') {
+        refreshMenu()
+      }
+    }
+
+    function handleStorage(event) {
+      if (event.key === 'menu-updated-at') {
+        refreshMenu()
+      }
+    }
+
+    window.addEventListener('focus', refreshMenu)
+    window.addEventListener('menu-updated', refreshMenu)
+    window.addEventListener('storage', handleStorage)
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      window.removeEventListener('focus', refreshMenu)
+      window.removeEventListener('menu-updated', refreshMenu)
+      window.removeEventListener('storage', handleStorage)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -38,7 +69,7 @@ export default function Menu({ onAdd }) {
 
         const data = await response.json()
 
-         if (!Array.isArray(data)) {
+        if (!Array.isArray(data)) {
           throw new Error('The menu service returned an invalid menu list.')
         }
 
@@ -70,6 +101,9 @@ export default function Menu({ onAdd }) {
           <h1>Menu</h1>
           <p>Choose your meals and add them to your cart.</p>
         </div>
+        <Button variant="secondary" disabled={loading} onClick={handleRetry}>
+          Refresh menu
+        </Button>
       </div>
 
       {message && <Alert>{message}</Alert>}

@@ -4,7 +4,10 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: #f8f2e5;
+  background:
+    radial-gradient(ellipse at top left, rgba(172, 8, 12, 0.55), transparent 65%),
+    radial-gradient(ellipse at bottom right, rgba(172, 8, 12, 0.4), transparent 60%),
+    #f8f2e5;
   color: #292b22;
   font-family: Arial, sans-serif;
 }

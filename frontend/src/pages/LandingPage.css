@@ -4,8 +4,12 @@
 }
 
 .landing-container {
-  width: min(1120px, calc(100% - 80px));
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
+  padding-left: 40px;
+  padding-right: 40px;
 }
 
 .landing-skip-link {
@@ -270,7 +274,8 @@
 
 @media (max-width: 900px) {
   .landing-container {
-    width: calc(100% - 48px);
+    padding-left: 24px;
+    padding-right: 24px;
   }
 
   .landing-hero-content {
@@ -294,7 +299,8 @@
 
 @media (max-width: 600px) {
   .landing-container {
-    width: calc(100% - 40px);
+    padding-left: 20px;
+    padding-right: 20px;
   }
 
   .landing-header-content {

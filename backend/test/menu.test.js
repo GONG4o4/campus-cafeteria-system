@@ -244,3 +244,81 @@ test("DELETE item referenced by orders returns 409", async () => {
 
     assert.equal(response.status, 409);
 });
+
+const invalidMeals = [
+    ["missing name", { name: undefined }],
+    ["blank name", { name: "   " }],
+    ["name longer than 100 characters", { name: "a".repeat(101) }],
+    ["missing price", { price: undefined }],
+    ["empty price", { price: "" }],
+    ["negative price", { price: "-1" }],
+    ["too many decimal places", { price: "12.345" }],
+    ["price above the database limit", { price: "100000000" }],
+    ["scientific notation", { price: "1e2" }],
+    ["non-numeric price", { price: "NaN" }],
+    ["null price", { price: null }],
+    ["boolean price", { price: true }],
+    ["invalid description", { description: [] }],
+    ["non-boolean availability", { is_available: "false" }],
+];
+
+for (const [method, path] of [["POST", "/api/menu"], ["PUT", "/api/menu/1"]]) {
+    for (const [label, changes] of invalidMeals) {
+        test(`${method} rejects ${label} before querying the database`, async () => {
+            const response = await request(
+                method, path, "cafeteria_staff", { ...validItem, ...changes }
+            );
+
+            assert.equal(response.status, 400);
+            assert.equal((await response.json()).message, "Invalid menu item information");
+        });
+    }
+
+    for (const role of [null, "student", "staff", "admin"]) {
+        test(`${method} rejects menu changes from ${role || "guests"}`, async () => {
+            const response = await request(method, path, role, validItem);
+            assert.equal(response.status, role ? 403 : 401);
+        });
+    }
+
+    for (const price of ["0", "99999999.99"]) {
+        test(`${method} accepts valid boundary price ${price} and trims the name`, async () => {
+            pool.query = async (sql, params) => {
+                assert.equal(params[0], validItem.name);
+                assert.equal(params[2], price);
+                return { rows: [{ menu_item_id: 1, ...validItem, price }] };
+            };
+
+            const response = await request(method, path, "cafeteria_staff", {
+                ...validItem, name: `  ${validItem.name}  `, price
+            });
+            assert.equal(response.status, method === "POST" ? 201 : 200);
+        });
+    }
+}
+
+test("availability changes update the menu without deleting meals or changing order totals", async () => {
+    pool.query = async (sql, params) => {
+        assert.match(sql, /UPDATE menu_items/);
+        assert.doesNotMatch(sql, /DELETE|UPDATE\s+orders|UPDATE\s+order_items/i);
+        assert.deepEqual(params, [validItem.name, validItem.description, "75", false, 1]);
+        return { rows: [{ menu_item_id: 1, ...validItem, is_available: false }] };
+    };
+
+    const response = await request("PUT", "/api/menu/1", "cafeteria_staff", {
+        ...validItem, is_available: false
+    });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).item.is_available, false);
+});
+
+test("menu update database errors return a generic JSON error", async () => {
+    pool.query = async () => {
+        throw new Error("private database details");
+    };
+    const response = await request("PUT", "/api/menu/1", "cafeteria_staff", validItem);
+    assert.equal(response.status, 500);
+    const data = await response.json();
+    assert.equal(data.message, "Failed to update menu item");
+    assert.doesNotMatch(JSON.stringify(data), /private database details/);
+});
