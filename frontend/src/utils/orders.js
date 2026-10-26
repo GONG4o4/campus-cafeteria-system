@@ -13,7 +13,7 @@ export const orderStatuses = {
   },
   preparing: {
     label: 'Preparing',
-    step: 1,
+    step: 1,  
     message: 'The kitchen is preparing your order.',
   },
   ready: {
@@ -54,3 +54,11 @@ export const formatOrderDate = (date) =>
     minute: '2-digit',
     timeZone: 'Asia/Manila',
   }).format(new Date(date))
+
+
+  export function getOrderTotal(items) {
+  return items.reduce(
+    (total, item) => total + Number(item.price || 0) * Number(item.quantity || 0),
+    0,
+  )
+}

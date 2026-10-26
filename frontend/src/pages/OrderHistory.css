@@ -1,3 +1,4 @@
+
 .cafeteria-layout {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);
@@ -37,9 +38,9 @@
 
 .order-history {
   width: 100%;
-  max-width: 1280px;
+  max-width: none;
   min-width: 0;
-  padding: 40px;
+  padding: 0;
 }
 
 .page-intro {
@@ -442,14 +443,6 @@
 }
 
 @media (max-width: 1150px) {
-  .cafeteria-layout {
-    grid-template-columns: 180px minmax(0, 1fr);
-  }
-
-  .order-history {
-    padding: 32px 24px;
-  }
-
   .order-card {
     grid-template-columns: 130px 55px minmax(0, 1fr) 80px;
     column-gap: 16px;
@@ -464,6 +457,7 @@
 }
 
 @media (max-width: 760px) {
+
   .cafeteria-layout {
     display: block;
   }

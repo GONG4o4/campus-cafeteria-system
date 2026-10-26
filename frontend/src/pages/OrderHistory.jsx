@@ -19,7 +19,9 @@ export default function OrderHistory() {
     detailStates,
   } = useOrderHistory()
 
-  const selectedFilter = filters.find((filter) => filter.id === activeFilter)
+  const selectedFilter = filters.find(
+    (filter) => filter.id === activeFilter,
+  )
   let updatedTime = ''
 
   if (lastUpdated) {
@@ -39,6 +41,7 @@ export default function OrderHistory() {
           {loading ? 'Refreshing...' : 'Refresh orders'}
         </Button>
       </div>
+
       {error && (
         <Alert error>
           {error} Use Refresh orders to retry.
@@ -46,6 +49,7 @@ export default function OrderHistory() {
       )}
 
       {loading && <Loading>Loading your orders...</Loading>}
+
       {lastUpdated && (
         <p className="orders-updated">
           Last updated: {updatedTime}. Refresh to check the latest status.
@@ -59,13 +63,15 @@ export default function OrderHistory() {
             activeFilter={activeFilter}
             onFilterChange={setActiveFilter}
           />
+
           <div className="orders-list-heading">
-            <h2>{selectedFilter.label}</h2>
+            <h2>{selectedFilter?.label ?? 'Orders'}</h2>
             <p role="status" aria-live="polite">
               {visibleOrders.length}{' '}
               {visibleOrders.length === 1 ? 'order' : 'orders'}
             </p>
           </div>
+
           {visibleOrders.length > 0 ? (
             <div className="orders-list">
               {visibleOrders.map((order) => (

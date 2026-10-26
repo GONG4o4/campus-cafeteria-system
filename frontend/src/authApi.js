@@ -1,6 +1,7 @@
+const USE_MOCK_AUTH = true
+const MOCK_DELAY_MS = 700
 
-const API_BASE_URL = 'http://localhost:3000'
-
+export const API_BASE_URL = 'http://localhost:3000'
 export const isValidEmail = (email) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
 
