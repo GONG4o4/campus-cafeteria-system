@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { isValidEmail, submitAuthRequest } from '../authApi.js'
 import './login.css'
 
-function Login({ onNavigate }) {
+function Login({ onNavigate, sessionError = '' }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -31,21 +31,29 @@ function Login({ onNavigate }) {
     setLoading(true)
 
     try {
-     const result = await submitAuthRequest(
-  '/api/auth/login',
-  { email: email.trim(), password },
-  'Login successful',
-)
+      const result = await submitAuthRequest(
+        '/api/auth/login',
+        { email: email.trim(), password },
+        'Login successful',
+      )
 
-if (!result.token) {
-  throw new Error('Login succeeded, but no authentication token was returned.')
-}
+      if (!result.token) {
+        throw new Error('Login succeeded, but no authentication token was returned.')
+      }
 
-localStorage.setItem('token', result.token)
-localStorage.setItem('user', JSON.stringify(result.user))
+      if (
+        !Number.isInteger(result.user?.user_id) ||
+        result.user.user_id < 1 ||
+        typeof result.user.role !== 'string'
+      ) {
+        throw new Error('Login succeeded, but your account details were incomplete.')
+      }
 
-setMessage('Login successful')
-onNavigate('home')
+      localStorage.setItem('token', result.token)
+      localStorage.setItem('user', JSON.stringify(result.user))
+
+      setMessage('Login successful')
+      onNavigate('home', result.user)
     } catch (requestError) {
       setError(requestError.message || 'Unable to sign in right now. Please try again.')
     } finally {
@@ -94,7 +102,9 @@ onNavigate('home')
           </div>
 
           <div className="form-feedback" aria-live="polite">
-            {error && <p className="form-error" role="alert">{error}</p>}
+            {(error || sessionError) && (
+              <p className="form-error" role="alert">{error || sessionError}</p>
+            )}
             {message && <p className="form-notice" role="status">{message}</p>}
           </div>
 

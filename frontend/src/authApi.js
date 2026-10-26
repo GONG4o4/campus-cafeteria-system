@@ -56,17 +56,43 @@ export async function submitAuthRequest(endpoint, payload, mockMessage) {
   }
 }
 
-export async function verifyToken(token) {
+export async function getSessionUser(token) {
+  let response
+
   try {
-    const response = await fetch(`${API_BASE_URL}/api/test/protected`, {
+    response = await fetch(`${API_BASE_URL}/api/test/protected`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
       },
     })
-
-    return response.ok
   } catch {
     throw new Error('Unable to connect to the backend.')
   }
+
+  if (response.status === 401 || response.status === 403) {
+    return null
+  }
+
+  if (!response.ok) {
+    throw new Error('Unable to check your session. Please try signing in again.')
+  }
+
+  let data
+
+  try {
+    data = await response.json()
+  } catch {
+    throw new Error('The authentication service returned an unreadable session.')
+  }
+
+  if (
+    !Number.isInteger(data?.user?.user_id) ||
+    data.user.user_id < 1 ||
+    typeof data.user.role !== 'string'
+  ) {
+    throw new Error('The authentication service returned an incomplete session.')
+  }
+
+  return data.user
 }

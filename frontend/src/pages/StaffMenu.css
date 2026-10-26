@@ -1,0 +1,159 @@
+.staff-menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.staff-menu-note {
+  margin: 0 0 20px;
+  color: #686868;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.staff-menu-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+}
+
+.staff-menu-table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 14px;
+}
+
+.staff-menu-table th,
+.staff-menu-table td {
+  padding: 20px;
+  border-bottom: 1px solid #e4e4e4;
+  vertical-align: top;
+}
+
+.staff-menu-table thead {
+  background: #f8f2e5;
+}
+
+.staff-menu-table tbody tr:last-child th,
+.staff-menu-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.staff-menu-table th[scope='row'] {
+  width: 40%;
+  overflow-wrap: anywhere;
+}
+
+.staff-menu-table th p {
+  margin: 10px 0 0;
+  color: #686868;
+  font-size: 13px;
+  font-weight: normal;
+  line-height: 1.6;
+}
+
+.staff-meal-price {
+  white-space: nowrap;
+}
+
+.meal-form-panel {
+  max-width: 680px;
+  margin-bottom: 28px;
+  padding: 24px;
+  border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  background: #f8f2e5;
+}
+
+.meal-form-panel h2 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.meal-form-panel > p {
+  margin: 0 0 24px;
+  color: #686868;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.meal-form fieldset {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.meal-form-field {
+  margin-bottom: 20px;
+}
+
+.meal-form-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.meal-form-field input,
+.meal-form-field textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  background: white;
+  color: #292b22;
+  font: inherit;
+  font-size: 14px;
+}
+
+.meal-form-field textarea {
+  resize: vertical;
+}
+
+.meal-form-field input:focus-visible,
+.meal-form-field textarea:focus-visible {
+  outline: 2px solid #638510;
+  outline-offset: 2px;
+}
+
+.meal-form-field input[aria-invalid='true'] {
+  border-color: #ac080c;
+}
+
+.meal-form-field p {
+  margin: 8px 0 0;
+  color: #ac080c;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.meal-available-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.meal-available-field input {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: #ac080c;
+}
+
+@media (max-width: 760px) {
+  .meal-form-panel {
+    padding: 20px;
+  }
+
+  .staff-menu-table th,
+  .staff-menu-table td {
+    padding: 16px;
+  }
+}
