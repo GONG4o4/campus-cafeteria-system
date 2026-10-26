@@ -10,7 +10,9 @@ export default function Menu({ onAdd }) {
   const [reload, setReload] = useState(0)
   const [message, setMessage] = useState('')
 
+
   function handleAddItem(item) {
+    if (!item.is_available) return
     onAdd(item)
     setMessage(`${item.name} added to your cart.`)
   }
@@ -36,12 +38,20 @@ export default function Menu({ onAdd }) {
 
         const data = await response.json()
 
+         if (!Array.isArray(data)) {
+          throw new Error('The menu service returned an invalid menu list.')
+        }
+
         if (!controller.signal.aborted) {
           setItems(data)
         }
       } catch (requestError) {
         if (!controller.signal.aborted) {
-          setError(requestError.message || 'Unable to load the menu.')
+          setError(
+            requestError instanceof TypeError
+              ? 'Unable to connect to the backend. Make sure it is running.'
+              : requestError.message || 'Unable to load the menu.',
+          )
         }
       } finally {
         if (!controller.signal.aborted) {
