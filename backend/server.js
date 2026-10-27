@@ -42,7 +42,7 @@ app.get("/api/test/protected", authenticateToken, (req, res) => {
 app.get(
     "/api/test/staff-only",
     authenticateToken,
-    requireRole("staff"),
+    requireRole("cafeteria_staff"),
     (req, res) => {
         res.json({
             message: "Welcome, Staff!!!"
