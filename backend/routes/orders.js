@@ -213,4 +213,55 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
     }
 });
 
+router.patch("/:id/cancel", authenticateToken, requireRole("student"), async (req, res) => {
+  const id = Number(req.params.id);
+
+  if (
+    !/^[1-9]\d*$/.test(req.params.id) ||
+    !Number.isSafeInteger(id) ||
+    id > 2147483647
+  ) {
+    return res.status(400).json({ message: "Invalid order ID" });
+  }
+
+  try {
+    const updated = await pool.query(
+      `UPDATE orders
+       SET status = 'cancelled',
+           updated_at = CURRENT_TIMESTAMP
+       WHERE order_id = $1
+         AND user_id = $2
+         AND status = 'pending'
+       RETURNING order_id, status`,
+      [id, req.user.user_id]
+    );
+
+    if (updated.rows.length > 0) {
+      return res.json({
+        message: "Order cancelled successfully",
+        order: updated.rows[0]
+      });
+    }
+
+    const existing = await pool.query(
+      "SELECT status FROM orders WHERE order_id = $1 AND user_id = $2",
+      [id, req.user.user_id]
+    );
+
+    if (existing.rows.length === 0) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    return res.status(409).json({
+      message: "Only pending orders can be cancelled"
+    });
+  } catch (error) {
+    console.error("Order cancellation failed:", error.message);
+
+    return res.status(500).json({
+      message: "Unable to cancel the order"
+    });
+  }
+});
+
 module.exports = router;

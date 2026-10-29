@@ -93,3 +93,25 @@ export async function getOrders(id, signal) {
 
   return data.map(formatOrder)
 }
+
+export async function cancelOrder(id) {
+  const token = localStorage.getItem('token');
+
+  const response = await fetch(
+    `http://localhost:3000/api/orders/${id}/cancel`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Unable to cancel order');
+  }
+
+  return data;
+}
