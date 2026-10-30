@@ -1,3 +1,4 @@
+import Button from '../ui/Button'
 import {
   formatMoney,
   formatOrderDate,
@@ -6,7 +7,13 @@ import {
 
 const steps = ['Pending', 'Preparing', 'Ready', 'Picked up']
 
-export default function OrderCard({ order, onLoadDetails, detailState = {} }) {
+export default function OrderCard({
+  order,
+  onLoadDetails,
+  detailState = {},
+  onCancel,
+  cancelling = false
+}) {
   const status = orderStatuses[order.status]
   const itemCount = order.items.reduce(
     (count, item) => count + item.quantity,
@@ -123,6 +130,17 @@ export default function OrderCard({ order, onLoadDetails, detailState = {} }) {
           )}
         </div>
       </details>
+      {order.status === 'pending' && (
+  <div className="order-cancel-actions">
+    <Button
+      variant="secondary"
+      onClick={onCancel}
+      disabled={cancelling}
+    >
+      {cancelling ? 'Cancelling...' : 'Cancel order'}
+    </Button>
+  </div>
+)}
     </article>
   )
 }

@@ -4,6 +4,8 @@ import { useOrderHistory } from '../hooks/useOrderHistory'
 import Button from '../components/ui/Button'
 import { Alert, Loading } from '../components/ui/Feedback'
 import './OrderHistory.css'
+import { useState } from 'react'
+import { cancelOrder } from '../ordersApi'
 
 export default function OrderHistory() {
   const {
@@ -18,6 +20,27 @@ export default function OrderHistory() {
     loadDetails,
     detailStates,
   } = useOrderHistory()
+const [cancellingId, setCancellingId] = useState(null)
+const [cancelError, setCancelError] = useState('')
+
+async function handleCancel(order) {
+  if (!window.confirm(`Are you sure you want to cancel ${order.reference}?`)) {
+    return
+  }
+
+  setCancellingId(order.id)
+  setCancelError('')
+
+  try {
+    await cancelOrder(order.id)
+    await refreshOrders()
+  } catch (error) {
+    setCancelError(error.message)
+    await refreshOrders()
+  } finally {
+    setCancellingId(null)
+  }
+}
 
   const selectedFilter = filters.find((filter) => filter.id === activeFilter)
   let updatedTime = ''
@@ -30,6 +53,9 @@ export default function OrderHistory() {
 
   return (
     <main className="order-history" id="order-history">
+      {cancelError && (
+        <Alert error>{cancelError}</Alert>)
+      }
       <div className="page-intro">
         <div>
           <h1>Order history</h1>
@@ -74,6 +100,7 @@ export default function OrderHistory() {
                   order={order}
                   onLoadDetails={() => loadDetails(order.id)}
                   detailState={detailStates[order.id]}
+                  onCancel={() => handleCancel(order)}cancelling={cancellingId === order.id}
                 />
               ))}
             </div>

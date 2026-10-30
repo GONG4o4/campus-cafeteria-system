@@ -554,3 +554,9 @@
   }
 
 }
+
+.order-cancel-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 20px 20px;
+}
