@@ -172,7 +172,7 @@
 }
 
 .menu-card--unavailable {
-  background: #fafafa;
+  background: #f6ecd8;
 }
 
 .menu-card--unavailable .meal-availability {
@@ -383,13 +383,9 @@
   }
 
   .sidebar-link {
-    padding: 10px 8px;
+    padding: 10px 12px;
     border-right: 0;
-    border-bottom: 2px solid transparent;
-  }
-
-  .sidebar-link[aria-current='page'] {
-    border-bottom-color: #a51c30;
+    border-radius: 999px;
   }
 
   .menu-search {
