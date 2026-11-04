@@ -8,19 +8,19 @@ const heroPoints = [
 
 const benefits = [
   {
-    icon: '📋',
+    number: '01',
     title: 'See what is available',
-    text: 'Check the menu before you go.',
+    text: 'Check the menu before heading to the cafeteria.',
   },
   {
-    icon: '🛒',
+    number: '02',
     title: 'Pick your meals',
-    text: 'Add meals and check the total.',
+    text: 'Add meals to your cart and check the total.',
   },
   {
-    icon: '🎟️',
-    title: 'Use your number',
-    text: 'Find your meal at the counter.',
+    number: '03',
+    title: 'Pick up with your number',
+    text: 'Your queue number helps you find your meal at the counter.',
   },
 ]
 
@@ -109,11 +109,11 @@ export default function LandingPage({ onNavigate }) {
         </nav>
 
         <a
-          className="landing-button"
+          className="landing-pill"
           href="/register"
           onClick={(event) => handleLinkClick(event, 'register')}
         >
-          Sign up
+          Sign up <span aria-hidden="true">→</span>
         </a>
       </header>
 
@@ -123,7 +123,9 @@ export default function LandingPage({ onNavigate }) {
             <div>
               <p className="landing-eyebrow">Good food | Less waiting</p>
               <h1 id="landing-title">
-                Hungry Between <span>Classes?</span>
+                <span>Hungry</span>
+                <span className="landing-title-soft">between</span>
+                <span className="landing-title-script">classes?</span>
               </h1>
               <p className="landing-description">
                 Take a look at the cafeteria menu and find something for your
@@ -133,11 +135,11 @@ export default function LandingPage({ onNavigate }) {
 
               <div className="landing-actions">
                 <a
-                  className="landing-button"
+                  className="landing-pill"
                   href="/menu"
                   onClick={(event) => handleLinkClick(event, 'menu')}
                 >
-                  View menu
+                  View menu <span aria-hidden="true">→</span>
                 </a>
                 <a
                   className="landing-button landing-button--outline"
@@ -173,46 +175,29 @@ export default function LandingPage({ onNavigate }) {
         </section>
 
         <section
-          className="landing-container landing-welcome"
-          aria-labelledby="welcome-title"
+          className="landing-container landing-section"
+          aria-labelledby="benefits-title"
         >
-          <div className="landing-ticket-panel">
-            <div className="landing-ticket">
-              <span>Your queue number</span>
-              <strong>#12</strong>
-              <span>Sample ticket</span>
+          <div className="landing-benefits">
+            <div>
+              <h2 id="benefits-title">
+                Know What You Want <em>Before You Get There</em>
+              </h2>
+              <p>Check the menu and plan your lunch whenever you have a moment.</p>
             </div>
-          </div>
 
-          <div>
-            <p className="landing-eyebrow">Welcome to Queu</p>
-            <h2 id="welcome-title">
-              Good Food, Less <span>Waiting</span>
-            </h2>
-            <p className="landing-description">
-              Know what you want before you get there. Check the menu and plan
-              your lunch whenever you have a moment.
-            </p>
-            <a
-              className="landing-button landing-button--dark"
-              href="/register"
-              onClick={(event) => handleLinkClick(event, 'register')}
-            >
-              Create account
-            </a>
+            <ul>
+              {benefits.map((benefit) => (
+                <li key={benefit.number}>
+                  <span aria-hidden="true">{benefit.number}</span>
+                  <div>
+                    <h3>{benefit.title}</h3>
+                    <p>{benefit.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
-
-          <ul className="landing-benefits">
-            {benefits.map((benefit) => (
-              <li key={benefit.title}>
-                <span aria-hidden="true">{benefit.icon}</span>
-                <div>
-                  <h3>{benefit.title}</h3>
-                  <p>{benefit.text}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
         </section>
 
         <section
@@ -258,14 +243,19 @@ export default function LandingPage({ onNavigate }) {
               <h2>Order First</h2>
               <h3>Then pick up with your number</h3>
               <a
-                className="landing-button landing-button--cream"
+                className="landing-pill landing-pill--cream"
                 href="/menu"
                 onClick={(event) => handleLinkClick(event, 'menu')}
               >
-                Order now
+                Order now <span aria-hidden="true">→</span>
               </a>
             </div>
-            <img src="/image.png" alt="" width="480" height="640" />
+
+            <div className="landing-ticket">
+              <span>Your queue number</span>
+              <strong>#12</strong>
+              <span>Sample ticket</span>
+            </div>
           </div>
 
           <div className="landing-steps-card">
@@ -300,6 +290,21 @@ export default function LandingPage({ onNavigate }) {
               </li>
             ))}
           </ul>
+        </section>
+
+        <section className="landing-container">
+          <div className="landing-banner">
+            <h2>
+              Good Food. <em>Less Waiting.</em>
+            </h2>
+            <a
+              className="landing-pill landing-pill--cream"
+              href="/menu"
+              onClick={(event) => handleLinkClick(event, 'menu')}
+            >
+              Browse the menu <span aria-hidden="true">→</span>
+            </a>
+          </div>
         </section>
       </main>
 
