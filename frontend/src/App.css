@@ -27,8 +27,8 @@ a {
 button:focus-visible,
 a:focus-visible,
 summary:focus-visible {
-  outline: 3px solid #638510;
-  outline-offset: 4px;
+  outline: 2px solid #638510;
+  outline-offset: 2px;
 }
 .sr-only {
   position: absolute;

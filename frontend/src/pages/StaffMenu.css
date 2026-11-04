@@ -16,6 +16,7 @@
   overflow-x: auto;
   border: 1px solid #e4e4e4;
   border-radius: 8px;
+  background: white;
 }
 
 .staff-menu-table {
@@ -65,7 +66,7 @@
   padding: 24px;
   border: 1px solid #e4e4e4;
   border-radius: 8px;
-  background: #f8f2e5;
+  background: white;
 }
 
 .meal-form-panel h2 {

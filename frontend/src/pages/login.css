@@ -5,8 +5,8 @@
   justify-content: center;
   padding: 20px;
   background:
-    radial-gradient(ellipse at top left, rgba(172, 8, 12, 0.55), transparent 65%),
-    radial-gradient(ellipse at bottom right, rgba(172, 8, 12, 0.4), transparent 60%),
+    radial-gradient(ellipse at top left, rgba(172, 8, 12, 0.2), transparent 65%),
+    radial-gradient(ellipse at bottom right, rgba(172, 8, 12, 0.15), transparent 60%),
     #f8f2e5;
   color: #292b22;
   font-family: Arial, sans-serif;
@@ -44,14 +44,15 @@
 }
 
 .page-copy {
-  margin: 10px 0 24px;
+  margin: 10px 0 0;
   color: #686868;
 }
 
 .account-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+  margin-top: 24px;
 }
 
 .form-field {
@@ -61,6 +62,7 @@
 }
 
 .form-field label {
+  font-size: 14px;
   font-weight: bold;
 }
 
@@ -73,6 +75,11 @@
   border-radius: 4px;
   color: #292b22;
   font: inherit;
+}
+
+.form-field input:focus-visible {
+  outline: 2px solid #638510;
+  outline-offset: 2px;
 }
 
 .form-feedback {

@@ -2,12 +2,17 @@
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);
   min-height: 100vh;
-  background: white;
+  background: #faf9f6;
 }
 
 .cafeteria-sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
   padding: 36px 0;
   border-right: 1px solid #e4e4e4;
+  background: white;
 }
 
 .cafeteria-brand {
@@ -163,6 +168,9 @@
 
 .orders-list {
   border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  background: white;
+  overflow: hidden;
 }
 
 .order-card {
@@ -300,7 +308,9 @@
 }
 
 .details-chevron {
+  margin-top: -8px;
   font-size: 16px;
+  line-height: 1;
 }
 
 .order-details[open] .details-chevron {
@@ -411,6 +421,8 @@
 .orders-empty {
   padding: 48px 20px;
   border: 1px solid #e4e4e4;
+  border-radius: 8px;
+  background: white;
   text-align: center;
 }
 
@@ -469,11 +481,13 @@
   }
 
   .cafeteria-sidebar {
+    position: static;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 16px;
     flex-wrap: wrap;
+    height: auto;
     padding: 16px 20px;
     border-right: 0;
     border-bottom: 1px solid #e4e4e4;
@@ -539,7 +553,7 @@
   }
 
   .queue-number {
-    flex: 0 0 50px;
+    flex: 0 0 70px;
   }
 
   .order-summary {
@@ -556,7 +570,8 @@
 }
 
 .order-cancel-actions {
+  grid-column: 1 / -1;
   display: flex;
   justify-content: flex-end;
-  padding: 12px 20px 20px;
+  padding-bottom: 20px;
 }
