@@ -1,20 +1,26 @@
 import './LandingPage.css'
 
+const heroPoints = [
+  { icon: '🛒', text: 'Order ahead' },
+  { icon: '🎟️', text: 'Get a queue number' },
+  { icon: '🍽️', text: 'Pick up your meal' },
+]
+
 const benefits = [
   {
-    number: '01',
+    icon: '📋',
     title: 'See what is available',
-    description: 'Check the menu before heading to the cafeteria.',
+    text: 'Check the menu before you go.',
   },
   {
-    number: '02',
+    icon: '🛒',
     title: 'Pick your meals',
-    description: 'Add meals to your cart and check the total.',
+    text: 'Add meals and check the total.',
   },
   {
-    number: '03',
-    title: 'Pick up with your number',
-    description: 'Your queue number helps you find your meal at the counter.',
+    icon: '🎟️',
+    title: 'Use your number',
+    text: 'Find your meal at the counter.',
   },
 ]
 
@@ -26,22 +32,24 @@ const collections = [
 ]
 
 const steps = [
-  {
-    title: 'Find something to eat',
-    text: 'Take a look at the menu and choose your meals.',
-  },
-  {
-    title: 'Log in and order',
-    text: 'Sign in, check your cart, and confirm your order.',
-  },
-  {
-    title: 'Get your queue number',
-    text: 'Keep the number given after your order is confirmed.',
-  },
-  {
-    title: 'Pick up your food',
-    text: 'Head to the counter with your number when your meal is ready.',
-  },
+  'Find something to eat',
+  'Log in and order',
+  'Get your queue number',
+  'Pick up your food',
+]
+
+const features = [
+  { icon: '🔍', title: 'Browse anytime', text: 'No account needed' },
+  { icon: '✏️', title: 'Change your cart', text: 'Before you check out' },
+  { icon: '🎟️', title: 'Queue number', text: 'For every confirmed order' },
+  { icon: '📦', title: 'Order history', text: 'See your pickup status' },
+]
+
+const footerLinks = [
+  { label: 'Home', page: 'landing', path: '/' },
+  { label: 'Menu', page: 'menu', path: '/menu' },
+  { label: 'Log in', page: 'login', path: '/login' },
+  { label: 'Sign up', page: 'register', path: '/register' },
 ]
 
 export default function LandingPage({ onNavigate }) {
@@ -60,7 +68,24 @@ export default function LandingPage({ onNavigate }) {
         Skip to content
       </a>
 
+      <div className="landing-topbar">
+        <div className="landing-container">
+          <span>Campus Cafeteria Pre-order System</span>
+          <span>Browse the menu without an account</span>
+        </div>
+      </div>
+
       <header className="landing-container landing-header">
+        <a
+          className="landing-brand"
+          href="/"
+          aria-label="Queu home"
+          onClick={(event) => handleLinkClick(event, 'landing')}
+        >
+          Queu
+          <small>Campus Cafeteria</small>
+        </a>
+
         <nav className="landing-nav" aria-label="Main navigation">
           <a
             href="/"
@@ -84,115 +109,126 @@ export default function LandingPage({ onNavigate }) {
         </nav>
 
         <a
-          className="landing-brand"
-          href="/"
-          aria-label="Queu home"
-          onClick={(event) => handleLinkClick(event, 'landing')}
-        >
-          Que<span>u</span>
-        </a>
-
-        <a
-          className="landing-pill"
+          className="landing-button"
           href="/register"
           onClick={(event) => handleLinkClick(event, 'register')}
         >
-          Sign up <span aria-hidden="true">→</span>
+          Sign up
         </a>
       </header>
 
       <main id="landing-main">
-        <section className="landing-container" aria-labelledby="landing-title">
-          <div className="landing-hero-top">
-            <h1 id="landing-title">
-              <span>Hungry</span>
-              <span className="landing-title-soft">between</span>
-              <span className="landing-title-italic">classes?</span>
-            </h1>
-
-            <div className="landing-hero-copy">
-              <p>
+        <section className="landing-hero" aria-labelledby="landing-title">
+          <div className="landing-container landing-hero-content">
+            <div>
+              <p className="landing-eyebrow">Good food | Less waiting</p>
+              <h1 id="landing-title">
+                Hungry Between <span>Classes?</span>
+              </h1>
+              <p className="landing-description">
                 Take a look at the cafeteria menu and find something for your
                 next break. Pick your meals and check your cart before you
                 head over.
               </p>
-              <a
-                className="landing-pill"
-                href="/menu"
-                onClick={(event) => handleLinkClick(event, 'menu')}
-              >
-                View menu <span aria-hidden="true">→</span>
-              </a>
-              <small>Just looking? You can browse without an account.</small>
-            </div>
-          </div>
 
-          <div className="landing-hero-panel">
-            <div className="landing-chips">
-              {collections.map((collection) => (
+              <div className="landing-actions">
                 <a
-                  key={collection.title}
+                  className="landing-button"
                   href="/menu"
                   onClick={(event) => handleLinkClick(event, 'menu')}
                 >
-                  {collection.title}
+                  View menu
                 </a>
-              ))}
+                <a
+                  className="landing-button landing-button--outline"
+                  href="/register"
+                  onClick={(event) => handleLinkClick(event, 'register')}
+                >
+                  Create account
+                </a>
+              </div>
+
+              <ul className="landing-hero-points">
+                {heroPoints.map((point) => (
+                  <li key={point.text}>
+                    <span aria-hidden="true">{point.icon}</span>
+                    {point.text}
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <img
-              src="/image.png"
-              alt="Rice topped with burger patties and mushroom gravy"
-              width="480"
-              height="640"
-            />
-
-            <div className="landing-hero-note">
-              <strong>Fresh Meals, Happy Students</strong>
-              <p>Order first, then pick up with your queue number.</p>
-              <a
-                href="/register"
-                onClick={(event) => handleLinkClick(event, 'register')}
-              >
-                Create account →
-              </a>
+            <div className="landing-plate">
+              <img
+                src="/image.png"
+                alt="Rice topped with burger patties and mushroom gravy"
+                width="480"
+                height="640"
+              />
+              <p className="landing-plate-badge">
+                <strong>Fresh</strong> Meals, Happy Students
+              </p>
             </div>
           </div>
         </section>
 
         <section
-          className="landing-container landing-section"
-          aria-labelledby="benefits-title"
+          className="landing-container landing-welcome"
+          aria-labelledby="welcome-title"
         >
-          <div className="landing-benefits">
-            <div className="landing-benefits-intro">
-              <h2 id="benefits-title">
-                Know What You Want <em>Before You Get There</em>
-              </h2>
-              <p>Check the menu and plan your lunch whenever you have a moment.</p>
-            </div>
-
-            <div className="landing-benefit-list">
-              {benefits.map((benefit) => (
-                <article key={benefit.number}>
-                  <span aria-hidden="true">{benefit.number}</span>
-                  <div>
-                    <h3>{benefit.title}</h3>
-                    <p>{benefit.description}</p>
-                  </div>
-                </article>
-              ))}
+          <div className="landing-ticket-panel">
+            <div className="landing-ticket">
+              <span>Your queue number</span>
+              <strong>#12</strong>
+              <span>Sample ticket</span>
             </div>
           </div>
+
+          <div>
+            <p className="landing-eyebrow">Welcome to Queu</p>
+            <h2 id="welcome-title">
+              Good Food, Less <span>Waiting</span>
+            </h2>
+            <p className="landing-description">
+              Know what you want before you get there. Check the menu and plan
+              your lunch whenever you have a moment.
+            </p>
+            <a
+              className="landing-button landing-button--dark"
+              href="/register"
+              onClick={(event) => handleLinkClick(event, 'register')}
+            >
+              Create account
+            </a>
+          </div>
+
+          <ul className="landing-benefits">
+            {benefits.map((benefit) => (
+              <li key={benefit.title}>
+                <span aria-hidden="true">{benefit.icon}</span>
+                <div>
+                  <h3>{benefit.title}</h3>
+                  <p>{benefit.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section
           className="landing-container landing-section"
           aria-labelledby="collections-title"
         >
-          <h2 className="landing-heading" id="collections-title">
-            Discover Meals <em>For Every Break</em>
-          </h2>
+          <p className="landing-eyebrow landing-center">From our cafeteria</p>
+          <div className="landing-section-title">
+            <h2 id="collections-title">Discover Our Meals</h2>
+            <a
+              href="/menu"
+              onClick={(event) => handleLinkClick(event, 'menu')}
+            >
+              View full menu →
+            </a>
+          </div>
 
           <div className="landing-collections">
             {collections.map((collection) => (
@@ -202,10 +238,10 @@ export default function LandingPage({ onNavigate }) {
                 href="/menu"
                 onClick={(event) => handleLinkClick(event, 'menu')}
               >
-                <h3>{collection.title}</h3>
                 <span className="landing-collection-icon" aria-hidden="true">
                   {collection.icon}
                 </span>
+                <h3>{collection.title}</h3>
                 <p>{collection.text}</p>
                 <span className="landing-collection-arrow" aria-hidden="true">
                   →
@@ -215,51 +251,98 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </section>
 
-        <section
-          className="landing-container landing-section"
-          aria-labelledby="workflow-title"
-        >
-          <h2 className="landing-heading" id="workflow-title">
-            From Picking a Meal <em>To Picking It Up</em>
-          </h2>
+        <section className="landing-container landing-offer">
+          <div className="landing-offer-banner">
+            <div>
+              <p>Order ahead</p>
+              <h2>Order First</h2>
+              <h3>Then pick up with your number</h3>
+              <a
+                className="landing-button landing-button--cream"
+                href="/menu"
+                onClick={(event) => handleLinkClick(event, 'menu')}
+              >
+                Order now
+              </a>
+            </div>
+            <img src="/image.png" alt="" width="480" height="640" />
+          </div>
 
-          <ol className="landing-steps">
-            {steps.map((step, index) => (
-              <li key={step.title}>
-                <span aria-hidden="true">{index + 1}</span>
-                <h3>{step.title}</h3>
-                <p>{step.text}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <section className="landing-container landing-section">
-          <div className="landing-banner">
-            <h2>
-              Good Food. <em>Less Waiting.</em>
-            </h2>
+          <div className="landing-steps-card">
+            <h2>How It Works</h2>
+            <ol>
+              {steps.map((step, index) => (
+                <li key={step}>
+                  <span aria-hidden="true">{index + 1}</span>
+                  {step}
+                </li>
+              ))}
+            </ol>
             <a
-              className="landing-pill landing-pill--cream"
+              className="landing-button"
               href="/menu"
               onClick={(event) => handleLinkClick(event, 'menu')}
             >
-              Browse the menu <span aria-hidden="true">→</span>
+              Start ordering
             </a>
           </div>
         </section>
+
+        <section className="landing-container" aria-label="Queu features">
+          <ul className="landing-features">
+            {features.map((feature) => (
+              <li key={feature.title}>
+                <span aria-hidden="true">{feature.icon}</span>
+                <div>
+                  <h3>{feature.title}</h3>
+                  <p>{feature.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
       </main>
 
-      <footer className="landing-container landing-footer">
-        <a
-          className="landing-brand"
-          href="/"
-          onClick={(event) => handleLinkClick(event, 'landing')}
-        >
-          Que<span>u</span>
-        </a>
-        <p>Campus Cafeteria Pre-order System</p>
-        <p>A student project for our campus cafeteria.</p>
+      <footer className="landing-footer">
+        <div className="landing-container landing-footer-content">
+          <div>
+            <a
+              className="landing-brand"
+              href="/"
+              onClick={(event) => handleLinkClick(event, 'landing')}
+            >
+              Queu
+              <small>Campus Cafeteria</small>
+            </a>
+            <p>A student project for our campus cafeteria.</p>
+          </div>
+
+          <div>
+            <h3>Quick links</h3>
+            {footerLinks.map((link) => (
+              <a
+                key={link.path}
+                href={link.path}
+                onClick={(event) => handleLinkClick(event, link.page)}
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          <div>
+            <h3>Our menu</h3>
+            {collections.map((collection) => (
+              <a
+                key={collection.title}
+                href="/menu"
+                onClick={(event) => handleLinkClick(event, 'menu')}
+              >
+                {collection.title}
+              </a>
+            ))}
+          </div>
+        </div>
       </footer>
     </div>
   )
