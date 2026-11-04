@@ -5,50 +5,50 @@
 
 .confirmation-queue {
   padding: 30px 20px;
-  border: 1px solid #e4e4e4;
-  border-radius: 8px;
-  background: #f8f2e5;
+  border-radius: 18px;
+  background: #6e0f1f;
   text-align: center;
 }
 
 .confirmation-queue p {
   margin: 0 0 12px;
-  color: #686868;
+  color: #e9dcc3;
   font-size: 16px;
 }
 
 .confirmation-queue strong {
   display: block;
-  color: #ac080c;
-  font-size: 72px;
-  font-weight: bold;
+  color: #fbf6ea;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 80px;
+  font-weight: 500;
   line-height: 1.1;
 }
 
 .order-confirmation > h1 {
   margin-bottom: 24px;
-  color: #292b22;
-  font-size: 24px;
+  color: #2e1a1c;
+  font-size: 40px;
   text-align: center;
 }
 
 .order-confirmation > p {
   margin: 12px 0;
-  color: #686868;
+  color: #6f5f5a;
   font-size: 14px;
   line-height: 1.5;
 }
 
 .order-confirmation > h2 {
   margin: 24px 0 12px;
-  font-size: 18px;
+  font-size: 24px;
 }
 
 .order-confirmation > ul {
   padding: 16px 20px 16px 40px;
-  border: 1px solid #e4e4e4;
-  border-radius: 8px;
-  background: white;
+  border: 1px solid #e9dcc3;
+  border-radius: 18px;
+  background: #fffcf5;
 }
 
 .order-confirmation > ul li {

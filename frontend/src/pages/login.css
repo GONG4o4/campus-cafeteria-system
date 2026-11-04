@@ -4,48 +4,46 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background:
-    radial-gradient(ellipse at top left, rgba(172, 8, 12, 0.2), transparent 65%),
-    radial-gradient(ellipse at bottom right, rgba(172, 8, 12, 0.15), transparent 60%),
-    #f8f2e5;
-  color: #292b22;
-  font-family: Arial, sans-serif;
+  background: #6e0f1f;
+  color: #2e1a1c;
 }
 
 .account-panel {
   width: 100%;
   max-width: 440px;
   padding: 32px;
-  background: #fff;
-  border: 1px solid #e4e4e4;
-  border-radius: 8px;
+  background: #fffcf5;
+  border: 1px solid #e9dcc3;
+  border-radius: 18px;
 }
 
 .brand {
-  font-size: 20px;
-  font-weight: bold;
-  color: #292b22;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 24px;
+  font-style: italic;
+  color: #2e1a1c;
   text-decoration: none;
 }
 
 .brand span {
-  color: #ac080c;
+  color: #a51c30;
 }
 
 .account-caption {
   margin: 24px 0 8px;
   font-size: 12px;
-  color: #686868;
+  color: #6f5f5a;
 }
 
 .account-panel h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: 36px;
+  font-style: italic;
 }
 
 .page-copy {
   margin: 10px 0 0;
-  color: #686868;
+  color: #6f5f5a;
 }
 
 .account-form {
@@ -70,15 +68,15 @@
   width: 100%;
   height: 44px;
   padding: 0 12px;
-  background: #fff;
-  border: 1px solid #e4e4e4;
-  border-radius: 4px;
-  color: #292b22;
+  background: #fffcf5;
+  border: 1px solid #e9dcc3;
+  border-radius: 12px;
+  color: #2e1a1c;
   font: inherit;
 }
 
 .form-field input:focus-visible {
-  outline: 2px solid #638510;
+  outline: 2px solid #a51c30;
   outline-offset: 2px;
 }
 
@@ -95,20 +93,20 @@
 }
 
 .form-error {
-  color: #ac080c;
+  color: #a51c30;
 }
 
 .form-notice {
-  background: #f8f2e5;
-  color: #292b22;
+  background: #f6ecd8;
+  color: #2e1a1c;
 }
 
 .submit-button {
   height: 44px;
   margin-top: 8px;
-  background: #ac080c;
+  background: #a51c30;
   border: 0;
-  border-radius: 4px;
+  border-radius: 12px;
   color: #fff;
   font: inherit;
   font-weight: bold;
@@ -116,7 +114,7 @@
 }
 
 .submit-button:hover:not(:disabled) {
-  background: #870609;
+  background: #6e0f1f;
 }
 
 .submit-button:disabled {
@@ -127,7 +125,7 @@
 .submit-button:focus-visible,
 .other-account a:focus-visible,
 .brand:focus-visible {
-  outline: 2px solid #638510;
+  outline: 2px solid #a51c30;
   outline-offset: 2px;
 }
 
@@ -144,12 +142,12 @@
 }
 .other-account {
   margin: 20px 0 0;
-  color: #686868;
+  color: #6f5f5a;
   text-align: center;
 }
 
 .other-account a {
-  color: #ac080c;
+  color: #a51c30;
   font-weight: bold;
   text-decoration: none;
 }

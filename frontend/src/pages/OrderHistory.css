@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);
   min-height: 100vh;
-  background: #faf9f6;
+  background: #fbf6ea;
 }
 
 .cafeteria-sidebar {
@@ -11,21 +11,23 @@
   align-self: start;
   height: 100vh;
   padding: 36px 0;
-  border-right: 1px solid #e4e4e4;
-  background: white;
+  background: #6e0f1f;
+  color: #fbf6ea;
 }
 
 .cafeteria-brand {
   display: block;
   margin: 0 28px 40px;
-  text-decoration: none;
-  font-size: 20px;
-  font-weight: bold;
+  color: #fbf6ea;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 26px;
+  font-style: italic;
   line-height: 1.6;
+  text-decoration: none;
 }
 
 .cafeteria-brand span {
-  color: #ac080c;
+  color: #e9c9a0;
 }
 
 .sidebar-link {
@@ -33,9 +35,9 @@
   align-items: center;
   gap: 12px;
   padding: 14px 24px;
-  border-right: 3px solid #ac080c;
-  background: #f8f2e5;
-  color: #ac080c;
+  border-right: 3px solid #a51c30;
+  background: #f6ecd8;
+  color: #a51c30;
   text-decoration: none;
   font-size: 14px;
 }
@@ -57,15 +59,15 @@
 
 .orders-refresh, .orders-logout {
   padding: 10px 16px;
-  border: 1px solid #ac080c;
-  border-radius: 4px;
-  background: white;
-  color: #ac080c;
+  border: 1px solid #a51c30;
+  border-radius: 12px;
+  background: #fffcf5;
+  color: #a51c30;
   font-size: 13px;
 }
 
 .orders-refresh:hover, .orders-logout:hover {
-  background: #f8f2e5;
+  background: #f6ecd8;
 }
 
 .orders-refresh:disabled {
@@ -78,28 +80,29 @@
 }
 
 .orders-updated {
-  color: #686868;
+  color: #6f5f5a;
   font-size: 12px;
   line-height: 1.5;
 }
 
 .orders-error {
   padding: 12px;
-  background: #f8f2e5;
-  color: #ac080c;
+  background: #f6ecd8;
+  color: #a51c30;
   font-size: 14px;
   line-height: 1.5;
 }
 
 .page-intro h1 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1.15;
 }
 
 .page-intro p {
   margin: 10px 0 0;
-  color: #686868;
+  color: #6f5f5a;
   font-size: 14px;
   line-height: 1.5;
 }
@@ -120,17 +123,17 @@
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: #686868;
+  color: #6f5f5a;
   font-size: 13px;
 }
 
 .order-filters button:hover {
-  color: #ac080c;
+  color: #a51c30;
 }
 
 .order-filters button[aria-pressed='true'] {
-  border-bottom-color: #ac080c;
-  color: #ac080c;
+  border-bottom-color: #a51c30;
+  color: #a51c30;
   font-weight: 600;
 }
 
@@ -162,14 +165,14 @@
 
 .orders-list-heading p {
   margin: 0;
-  color: #686868;
+  color: #6f5f5a;
   font-size: 12px;
 }
 
 .orders-list {
-  border: 1px solid #e4e4e4;
-  border-radius: 8px;
-  background: white;
+  border: 1px solid #e9dcc3;
+  border-radius: 18px;
+  background: #fffcf5;
   overflow: hidden;
 }
 
@@ -179,7 +182,7 @@
   align-items: start;
   column-gap: 20px;
   padding: 20px 20px 0;
-  border-bottom: 1px solid #e4e4e4;
+  border-bottom: 1px solid #e9dcc3;
 }
 
 .order-card:last-child {
@@ -202,7 +205,7 @@
 }
 
 .order-card-heading time {
-  color: #686868;
+  color: #6f5f5a;
   font-size: 11px;
   line-height: 1.5;
 }
@@ -215,7 +218,7 @@
   gap: 6px;
   font-size: 12px;
   line-height: 1.5;
-  color: #686868;
+  color: #6f5f5a;
 }
 
 .order-status::before {
@@ -236,7 +239,7 @@
 }
 
 .order-status--cancelled {
-  color: #ac080c;
+  color: #a51c30;
 }
 
 .queue-number {
@@ -248,7 +251,7 @@
 }
 
 .queue-number span, .order-summary > span, .order-total > span {
-  color: #686868;
+  color: #6f5f5a;
   font-size: 11px;
 }
 
@@ -293,7 +296,7 @@
   justify-content: flex-end;
   gap: 8px;
   padding: 8px 0 14px;
-  color: #686868;
+  color: #6f5f5a;
   font-size: 12px;
   cursor: pointer;
   list-style: none;
@@ -304,7 +307,7 @@
 }
 
 .order-details summary:hover {
-  color: #ac080c;
+  color: #a51c30;
 }
 
 .details-chevron {
@@ -319,7 +322,7 @@
 
 .order-details-content {
   padding: 16px 0 20px;
-  border-top: 1px solid #e4e4e4;
+  border-top: 1px solid #e9dcc3;
 }
 
 .tracking-message {
@@ -343,7 +346,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  color: #686868;
+  color: #6f5f5a;
   font-size: 11px;
 }
 
@@ -354,7 +357,7 @@
   left: -50%;
   width: 100%;
   height: 2px;
-  background: #e4e4e4;
+  background: #e9dcc3;
 }
 
 .order-progress li:first-child::before {
@@ -373,7 +376,7 @@
 }
 
 .order-progress .step-reached > span:first-child, .order-progress .step-reached::before {
-  background: #638510;
+  background: #a51c30;
   color: white;
 }
 
@@ -405,7 +408,7 @@
 
 .item-quantity {
   margin-right: 8px;
-  color: #686868;
+  color: #6f5f5a;
 }
 
 .details-total {
@@ -414,15 +417,15 @@
   max-width: 480px;
   padding-top: 12px;
   margin-top: 8px;
-  border-top: 1px solid #e4e4e4;
+  border-top: 1px solid #e9dcc3;
   font-size: 13px;
 }
 
 .orders-empty {
   padding: 48px 20px;
-  border: 1px solid #e4e4e4;
-  border-radius: 8px;
-  background: white;
+  border: 1px solid #e9dcc3;
+  border-radius: 18px;
+  background: #fffcf5;
   text-align: center;
 }
 
@@ -432,7 +435,7 @@
 }
 
 .orders-empty p {
-  color: #686868;
+  color: #6f5f5a;
   font-size: 13px;
   line-height: 1.5;
 }
@@ -440,16 +443,16 @@
 .orders-empty button {
   padding: 10px 16px;
   margin-top: 12px;
-  border: 1px solid #ac080c;
+  border: 1px solid #a51c30;
   border-radius: 3px;
-  background: white;
-  color: #ac080c;
+  background: #fffcf5;
+  color: #a51c30;
   font-size: 13px;
 }
 
 .orders-footer {
   margin-top: 20px;
-  color: #686868;
+  color: #6f5f5a;
   font-size: 12px;
 }
 
@@ -490,12 +493,11 @@
     height: auto;
     padding: 16px 20px;
     border-right: 0;
-    border-bottom: 1px solid #e4e4e4;
   }
 
   .cafeteria-brand {
     margin: 0;
-    font-size: 20px;
+    font-size: 24px;
   }
 
   .orders-logout {
@@ -510,7 +512,6 @@
   .sidebar-link {
     padding: 10px 0;
     border-right: 0;
-    background: white;
     font-size: 12px;
   }
 
