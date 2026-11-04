@@ -9,7 +9,12 @@ export default function Menu({ onAdd }) {
   const [error, setError] = useState('')
   const [reload, setReload] = useState(0)
   const [message, setMessage] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
 
+  const search = searchTerm.trim().toLowerCase()
+  const filteredItems = items.filter((item) =>
+    item.name.toLowerCase().includes(search),
+  )
 
   function handleAddItem(item) {
     if (!item.is_available) return
@@ -108,6 +113,19 @@ export default function Menu({ onAdd }) {
 
       {message && <Alert>{message}</Alert>}
 
+      {!error && items.length > 0 && (
+        <div className="menu-search">
+          <label htmlFor="menu-search-input">Search meals</label>
+          <input
+            id="menu-search-input"
+            type="search"
+            placeholder="Type a meal name"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+        </div>
+      )}
+
       {loading && <Loading>Loading the menu...</Loading>}
 
       {!loading && error && (
@@ -126,9 +144,19 @@ export default function Menu({ onAdd }) {
         </div>
       )}
 
-      {!loading && !error && items.length > 0 && (
+      {!loading && !error && items.length > 0 && filteredItems.length === 0 && (
+        <div className="student-empty">
+          <h2>No meals found. Try another search.</h2>
+          <p>Check the spelling or clear the search to see the full menu.</p>
+          <Button variant="secondary" onClick={() => setSearchTerm('')}>
+            Clear search
+          </Button>
+        </div>
+      )}
+
+      {!loading && !error && filteredItems.length > 0 && (
         <div className="menu-grid">
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <MenuCard
               key={item.menu_item_id}
               item={item}

@@ -91,6 +91,35 @@
 }
 
 
+.menu-search {
+  max-width: 420px;
+  margin-bottom: 24px;
+}
+
+.menu-search label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.menu-search input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  background: white;
+  color: #292b22;
+  font: inherit;
+  font-size: 14px;
+}
+
+.menu-search input:focus-visible {
+  outline: 2px solid #638510;
+  outline-offset: 2px;
+}
+
 .menu-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -337,6 +366,10 @@
 
   .sidebar-link[aria-current='page'] {
     border-bottom-color: #ac080c;
+  }
+
+  .menu-search {
+    max-width: none;
   }
 
   .menu-grid {
