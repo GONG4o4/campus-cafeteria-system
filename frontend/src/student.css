@@ -394,3 +394,39 @@
   }
 
 }
+
+.menu-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0 24px;
+}
+
+.menu-filter button {
+  padding: 8px 16px;
+  background: white;
+  color: #686868;
+  border: 1px solid #e4e4e4;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.menu-filter button:hover {
+  border-color: #ac080c;
+  color: #ac080c;
+}
+
+.menu-filter button[aria-pressed='true'] {
+  background: #ac080c;
+  border-color: #ac080c;
+  color: white;
+}
+
+.menu-filter button:focus-visible {
+  outline: 2px solid #638510;
+  outline-offset: 2px;
+}

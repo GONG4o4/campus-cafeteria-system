@@ -10,14 +10,15 @@ export default function Menu({ onAdd }) {
   const [reload, setReload] = useState(0)
   const [message, setMessage] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [availabilityFilter, setAvailabilityFilter] = useState('all')
 
   const search = searchTerm.trim().toLowerCase()
-  const filteredItems = items.filter((item) =>
-    item.name.toLowerCase().includes(search),
-  )
+  const filteredItems = items
+    .filter((item) => item.name.toLowerCase().includes(search))
+    .filter((item) => availabilityFilter === 'all' || item.is_available === true)
 
   function handleAddItem(item) {
-    if (!item.is_available) return
+    if (item.is_available !== true) return
     onAdd(item)
     setMessage(`${item.name} added to your cart.`)
   }
@@ -126,6 +127,25 @@ export default function Menu({ onAdd }) {
         </div>
       )}
 
+      {!error && items.length > 0 && (
+        <div className="menu-filter" role="group" aria-label="Filter by availability">
+          <button
+            type="button"
+            aria-pressed={availabilityFilter === 'all'}
+            onClick={() => setAvailabilityFilter('all')}
+          >
+            All meals
+          </button>
+          <button
+            type="button"
+            aria-pressed={availabilityFilter === 'available'}
+            onClick={() => setAvailabilityFilter('available')}
+          >
+            Available only
+          </button>
+        </div>
+      )}
+
       {loading && <Loading>Loading the menu...</Loading>}
 
       {!loading && error && (
@@ -146,11 +166,24 @@ export default function Menu({ onAdd }) {
 
       {!loading && !error && items.length > 0 && filteredItems.length === 0 && (
         <div className="student-empty">
-          <h2>No meals found. Try another search.</h2>
-          <p>Check the spelling or clear the search to see the full menu.</p>
-          <Button variant="secondary" onClick={() => setSearchTerm('')}>
-            Clear search
-          </Button>
+          <h2>No meals found</h2>
+          <p>
+            {search
+              ? 'No meals match your search. Try a different term or clear the search.'
+              : 'There are currently no available meals. Try switching to "All meals".'}
+          </p>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px' }}>
+            {search && (
+              <Button variant="secondary" onClick={() => setSearchTerm('')}>
+                Clear search
+              </Button>
+            )}
+            {availabilityFilter === 'available' && (
+              <Button variant="secondary" onClick={() => setAvailabilityFilter('all')}>
+                Show all meals
+              </Button>
+            )}
+          </div>
         </div>
       )}
 
