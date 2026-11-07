@@ -1,62 +1,64 @@
 .order-confirmation {
-    max-width: 800px;
-    margin: 0 auto;
-
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.confirmation-queue{
-    padding: 30px 20px;
-    background-color: #EDE5CC;
-    border: 2px solid #D8BE07;
-    border-radius: 16px;
-    text-align: center;
+.confirmation-queue {
+  padding: 30px 20px;
+  border-radius: 18px;
+  background: #6e0f1f;
+  text-align: center;
 }
 
-.confirmation-queue p{
-    font-size: 16px;
-    color: #A90409;
-    margin-bottom: 12px;
+.confirmation-queue p {
+  margin: 0 0 12px;
+  color: #e9dcc3;
+  font-size: 16px;
 }
 
-.confirmation-queue strong{
-    display: block;
-    font-size: clamp(48px, 10vw, 88px);
-    font-weight: 800;
-    color: #A90409;
+.confirmation-queue strong {
+  display: block;
+  color: #fbf6ea;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 80px;
+  font-weight: 500;
+  line-height: 1.1;
 }
 
 .order-confirmation > h1 {
-    color: #A90409;
-    text-align: center;
-    margin-bottom: 24px;
+  margin-bottom: 24px;
+  color: #2e1a1c;
+  font-size: 40px;
+  text-align: center;
 }
 
 .order-confirmation > p {
-    color: #40550F;
-    margin: 12px 0;
+  margin: 12px 0;
+  color: #6f5f5a;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .order-confirmation > h2 {
-    color: #A90409;
-    margin-top: 24px;
-    margin-bottom: 12px;
+  margin: 24px 0 12px;
+  font-size: 24px;
 }
 
 .order-confirmation > ul {
-    background-color: #EDE5CC;
-    border: 1px solid #D8BE07;
-    border-radius: 12px;
-    padding: 20px 20px 20px 40px;
+  padding: 16px 20px 16px 40px;
+  border: 1px solid #e9dcc3;
+  border-radius: 18px;
+  background: #fffcf5;
 }
 
 .order-confirmation > ul li {
-    padding: 8px 0;
-    color: #40550F;
+  padding: 8px 0;
+  font-size: 14px;
 }
 
 .confirmation-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
 }

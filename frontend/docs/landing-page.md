@@ -7,11 +7,11 @@ The landing page loads without a login, backend server, database, or order/queue
 
 - `src/pages/LandingPage.jsx`: public navigation, hero, three benefits, four-step
   workflow, and project footer. Repeated cards use arrays and `map`.
-- `src/pages/LandingPage.css`: scoped styles using the existing colors, Arial,
-  shared button classes, Flexbox, Grid, and media queries. No `:root` variables.
+- `src/pages/LandingPage.css`: scoped styles using Google Fonts,
+  shared crimson and cream colors, Flexbox, Grid, and media queries. No `:root` variables.
 - `public/image.png`: one user-provided meal photo, displayed in a static figure
   with the caption "Fresh Meals, Happy Students". There are no carousel controls
-  or decorative dots. The photo is a hero visual, not a menu or availability record.
+  or decorative dots. The photo is a hero visual, not a menu or availability record. Food emoji stand in for category photos.
 - `src/App.jsx`: maps `/` to the landing page and makes `/menu` public using the
   existing navigation approach. React Router is not installed or added.
 - `CafeteriaLayout.jsx`: includes Home and displays Log in for public visitors.

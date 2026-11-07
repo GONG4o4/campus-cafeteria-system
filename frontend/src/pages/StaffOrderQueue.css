@@ -8,17 +8,21 @@
 
 .staff-queue-filters button {
   padding: 10px 16px;
-  background: white;
-  color: #555;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  background: #fffcf5;
+  color: #6f5f5a;
+  border: 1px solid #e9dcc3;
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+}
+
+.staff-queue-filters button:hover {
+  color: #a51c30;
 }
 
 .staff-queue-filters button.active {
-  background: #ad080c;
-  border-color: #ad080c;
+  background: #a51c30;
+  border-color: #a51c30;
   color: white;
 }
 
@@ -29,10 +33,12 @@
 }
 
 .staff-queue-card {
+  display: flex;
+  flex-direction: column;
   padding: 24px;
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  background: white;
+  border: 1px solid #e9dcc3;
+  border-radius: 18px;
+  background: #fffcf5;
 }
 
 .staff-queue-card-header {
@@ -44,13 +50,13 @@
 
 .staff-queue-card-header h2 {
   margin: 0 0 8px;
-  font-size: 22px;
+  font-size: 26px;
 }
 
 .staff-queue-card-header p {
   margin: 4px 0;
   font-size: 13px;
-  color: #666;
+  color: #6f5f5a;
 }
 
 .staff-queue-status {
@@ -67,8 +73,8 @@
 }
 
 .staff-queue-status.status-preparing {
-  background: #fff0cf;
-  color: #956300;
+  background: #e3eefc;
+  color: #1f5496;
 }
 
 .staff-queue-status.status-ready {
@@ -83,13 +89,13 @@
 
 .staff-queue-status.status-cancelled {
   background: #ffe5e5;
-  color: #a40000;
+  color: #a51c30;
 }
 
 .staff-queue-items {
   margin: 20px 0;
-  border-top: 1px solid #eee;
-  border-bottom: 1px solid #eee;
+  border-top: 1px solid #e9dcc3;
+  border-bottom: 1px solid #e9dcc3;
 }
 
 .staff-queue-items > div {
@@ -106,6 +112,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
+  margin-top: auto;
 }
 
 .staff-queue-card-footer > div {
@@ -114,12 +121,17 @@
   gap: 5px;
 }
 
+.staff-queue-card-footer > div span {
+  color: #6f5f5a;
+  font-size: 13px;
+}
+
 .staff-queue-card-footer strong {
   font-size: 17px;
 }
 
 .staff-queue-finished {
-  color: #777;
+  color: #6f5f5a;
   font-size: 13px;
 }
 
