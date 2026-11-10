@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Button from '../components/ui/Button'
 import { Alert } from '../components/ui/Feedback'
+import StaffAnalytics from '../components/StaffAnalytics'
 
 const statuses = [
   { key: 'pending', label: 'Pending' },
@@ -28,6 +29,7 @@ export default function StaffDashboard({ onNavigate }) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const loadOrders = useCallback(async (signal) => {
     try {
@@ -130,7 +132,10 @@ export default function StaffDashboard({ onNavigate }) {
 
         <Button
           variant="secondary"
-          onClick={() => loadOrders()}
+          onClick={() => {
+            loadOrders()
+            setRefreshKey(refreshKey + 1)
+          }}
         >
           Refresh dashboard
         </Button>
@@ -168,6 +173,8 @@ export default function StaffDashboard({ onNavigate }) {
           </Alert>
         )}
       </section>
+
+      <StaffAnalytics today={today} refreshKey={refreshKey} />
 
       <section aria-labelledby="staff-tasks-heading">
         <h2 id="staff-tasks-heading">What do you need to do?</h2>

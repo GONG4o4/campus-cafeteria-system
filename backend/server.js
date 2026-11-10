@@ -8,6 +8,7 @@ const authTest = require("./routes/authTest");
 const menu = require("./routes/menu");
 const orders = require("./routes/orders")
 const staffOrders = require("./routes/staffOrders")
+const staffAnalytics = require("./routes/staffAnalytics")
 
 const {
     authenticateToken,
@@ -29,6 +30,7 @@ app.use("/api/auth", authTest);
 app.use("/api/menu", menu);
 app.use("/api/orders", orders);
 app.use("/api/staff", staffOrders);
+app.use("/api/staff", staffAnalytics);
 
 app.get("/api/health", (req, res) => {
     res.json({ message: "Backend is working" });
