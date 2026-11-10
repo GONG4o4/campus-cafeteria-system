@@ -1,12 +1,20 @@
 const express = require("express");
 const pool = require("../db");
-const {authenticateToken, requireRole} = require ("../middleware/authMiddleware");
+const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
+const { createCheckoutSession } = require("../services/paymongo");
 
 const router = express.Router();
 
 const orderSelect = `
     SELECT o.order_id, o.queue_number, o.status, o.total_amount, o.order_date,
            TO_CHAR(o.ordered_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ordered_at,
+           COALESCE((
+               SELECT p.status 
+               FROM payments p 
+               WHERE p.order_id = o.order_id 
+               ORDER BY p.payment_id DESC 
+               LIMIT 1
+           ), 'unpaid') AS payment_status,
            COALESCE((
                SELECT json_agg(json_build_object(
                    'order_item_id', i.order_item_id,
@@ -102,7 +110,7 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
                 await client.query("BEGIN");
                 const ids = items.map(item => item.menu_item_id);
                 const menuResult = await client.query(
-                    `SELECT menu_item_id, price, is_available
+                    `SELECT menu_item_id, price, is_available, name
                     FROM menu_items
                     WHERE menu_item_id = ANY($1::int[])
                     ORDER BY menu_item_id
@@ -130,6 +138,7 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
 
                     orderItems.push({
                         menu_item_id: item.menu_item_id,
+                        name: menuItem.name,
                         quantity: item.quantity,
                         unit_price: toAmount(unitCents),
                         subtotal: toAmount(subtotalCents)
@@ -143,53 +152,57 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
                     });
                 }
 
-                await client.query(
-                    "SELECT pg_advisory_xact_lock(34034, 1)"
-                );
-
                 const dateResult = await client.query(
                     `SELECT TO_CHAR(
                         (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date, 'YYYY-MM-DD') AS order_date`
                 );
 
-        const orderDate = dateResult.rows[0].order_date;
+                const orderDate = dateResult.rows[0].order_date;
 
-        const queueResult = await client.query(
-            `SELECT COALESCE(MAX(queue_number), 0) + 1 AS next_number FROM  orders WHERE order_date = $1::date`,
-            [orderDate]
-        );
+                const orderResult = await client.query(
+                    `INSERT INTO orders (user_id, total_amount, order_date) VALUES ($1, $2, $3)
+                    RETURNING order_id, status, total_amount, order_date`,
+                    [
+                        req.user.user_id, toAmount(totalCents), orderDate
+                    ]
+                );
 
-        const queueNumber = Number(queueResult.rows[0].next_number);
+                const order = orderResult.rows[0];
 
-        const orderResult = await client.query(
-            `INSERT INTO orders (user_id, queue_number, total_amount, order_date) VALUES ($1, $2, $3, $4)
-            RETURNING order_id, queue_number, status, total_amount, order_date`,
-            [
-                req.user.user_id, queueNumber, toAmount(totalCents), orderDate
-            ]
-        );
+                for (const item of orderItems) {
+                    await client.query(
+                        `INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)`,
+                        [
+                            order.order_id, item.menu_item_id, item.quantity, item.unit_price, item.subtotal
+                        ]
+                    );
+                }
 
-    const order = orderResult.rows[0];
+                const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+                const successUrl = `${clientUrl}/payment/success?order_id=${order.order_id}`;
+                const cancelUrl = `${clientUrl}/payment/cancelled?order_id=${order.order_id}`;
 
-    for (const item of orderItems) {
-        await client.query(
-            `INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)`,
-            [
-                order.order_id, item.menu_item_id, item.quantity, item.unit_price, item.subtotal
-            ]
-        );
-    }
+                const paymongoData = await createCheckoutSession(
+                    order.order_id,
+                    order.total_amount,
+                    orderItems,
+                    successUrl,
+                    cancelUrl
+                );
 
-    await client.query("COMMIT");
+                await client.query(
+                    `INSERT INTO payments (order_id, checkout_session_id, reference_number, amount, status) VALUES ($1, $2, $3, $4, 'pending')`,
+                    [order.order_id, paymongoData.checkoutSessionId, paymongoData.referenceNumber, order.total_amount]
+                );
 
-    return res.status(201).json({
-        message: "Order placed successfully",
-        order_id: order.order_id,
-        queue_number: order.queue_number,
-        status: order.status,
-        total_amount: order.total_amount,
-        order_date: order.order_date
-    });
+                await client.query("COMMIT");
+
+                return res.status(201).json({
+                    message: "Order created. Please complete payment.",
+                    order_id: order.order_id,
+                    checkout_url: paymongoData.checkoutUrl,
+                    total_amount: order.total_amount
+                });
 
 } catch (error){
     if (client) {
@@ -224,8 +237,12 @@ router.patch("/:id/cancel", authenticateToken, requireRole("student"), async (re
     return res.status(400).json({ message: "Invalid order ID" });
   }
 
+  let client;
   try {
-    const updated = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+
+    const updated = await client.query(
       `UPDATE orders
        SET status = 'cancelled',
            updated_at = CURRENT_TIMESTAMP
@@ -237,16 +254,27 @@ router.patch("/:id/cancel", authenticateToken, requireRole("student"), async (re
     );
 
     if (updated.rows.length > 0) {
+      await client.query(
+        `UPDATE payments
+         SET status = 'cancelled',
+             updated_at = CURRENT_TIMESTAMP
+         WHERE order_id = $1
+           AND status IN ('unpaid', 'pending')`,
+        [id]
+      );
+      await client.query("COMMIT");
       return res.json({
         message: "Order cancelled successfully",
         order: updated.rows[0]
       });
     }
 
-    const existing = await pool.query(
+    const existing = await client.query(
       "SELECT status FROM orders WHERE order_id = $1 AND user_id = $2",
       [id, req.user.user_id]
     );
+
+    await client.query("ROLLBACK");
 
     if (existing.rows.length === 0) {
       return res.status(404).json({ message: "Order not found" });
@@ -256,11 +284,18 @@ router.patch("/:id/cancel", authenticateToken, requireRole("student"), async (re
       message: "Only pending orders can be cancelled"
     });
   } catch (error) {
+    if (client) {
+        try { await client.query("ROLLBACK"); } catch (e) {}
+    }
     console.error("Order cancellation failed:", error.message);
 
     return res.status(500).json({
       message: "Unable to cancel the order"
     });
+  } finally {
+    if (client) {
+        client.release();
+    }
   }
 });
 

@@ -6,8 +6,9 @@ require("dotenv").config();
 const auth = require("./routes/auth");
 const authTest = require("./routes/authTest");
 const menu = require("./routes/menu");
-const orders = require("./routes/orders")
-const staffOrders = require("./routes/staffOrders")
+const orders = require("./routes/orders");
+const staffOrders = require("./routes/staffOrders");
+const payments = require("./routes/payments");
 
 const {
     authenticateToken,
@@ -15,14 +16,16 @@ const {
 } = require("./middleware/authMiddleware");
 
 const app = express();
+
 app.use(cors({
   origin: "http://localhost:5173",
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-app.use(express.json());
+app.use("/api/payments", express.raw({ type: "application/json" }), payments);
 
+app.use(express.json());
 
 app.use("/api/auth", auth);
 app.use("/api/auth", authTest);

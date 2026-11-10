@@ -25,6 +25,7 @@ router.get('/orders', async (req, res) => {
         TO_CHAR(o.ordered_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ordered_at,
         o.status,
         o.total_amount,
+        'paid' AS payment_status,
         COALESCE((
           SELECT json_agg(
             json_build_object(
@@ -42,6 +43,10 @@ router.get('/orders', async (req, res) => {
           WHERE oi.order_id = o.order_id
         ), '[]'::json) AS items
       FROM orders o
+      WHERE EXISTS (
+        SELECT 1 FROM payments p 
+        WHERE p.order_id = o.order_id AND p.status = 'paid'
+      )
       ORDER BY o.order_date DESC, o.queue_number ASC
     `)
 
@@ -85,7 +90,11 @@ router.patch('/orders/:id/status', async (req, res) => {
 
   try {
     const existing = await pool.query(
-      'SELECT status FROM orders WHERE order_id = $1',
+      `SELECT o.status, p.status AS payment_status
+       FROM orders o
+       LEFT JOIN payments p ON p.order_id = o.order_id AND p.status = 'paid'
+       WHERE o.order_id = $1
+       LIMIT 1`,
       [orderId]
     )
 
@@ -96,6 +105,13 @@ router.patch('/orders/:id/status', async (req, res) => {
     }
 
     const currentStatus = existing.rows[0].status
+    const paymentStatus = existing.rows[0].payment_status
+
+    if (paymentStatus !== 'paid') {
+      return res.status(409).json({
+        message: 'Cannot update status. Payment has not been confirmed.',
+      })
+    }
 
     if (transitions[currentStatus] !== body.status) {
       return res.status(409).json({
