@@ -14,6 +14,13 @@ import StaffDashboard from './pages/StaffDashboard.jsx'
 import StaffOrderQueue from './pages/StaffOrderQueue.jsx'
 import StaffMenu from './pages/StaffMenu.jsx'
 import StaffDailySummary from './pages/StaffDailySummary.jsx'
+import AdminNavigation from './components/AdminNavigation.jsx'
+import AdminOverview from './pages/AdminOverview.jsx'
+import AdminUsers from './pages/AdminUsers.jsx'
+import AdminStaff from './pages/AdminStaff.jsx'
+import AdminReports from './pages/AdminReports.jsx'
+import AdminAuditLogs from './pages/AdminAuditLogs.jsx'
+import AdminSettings from './pages/AdminSettings.jsx'
 import { useCart } from './hooks/useCart'
 import { getSessionUser } from './authApi.js'
 import './App.css'
@@ -27,14 +34,38 @@ function isConfirmationPath(path) {
 }
 
 function needsAuthentication(path) {
-  return protectedPaths.includes(path) || isConfirmationPath(path) || isStaffPath(path)
+  return protectedPaths.includes(path) || isConfirmationPath(path) || isStaffPath(path) || isAdminPath(path)
 }
 
 function isStaffPath(path) {
   return path === '/staff' || path.startsWith('/staff/')
 }
 
+function isAdminPath(path) {
+  return path === '/admin' || path.startsWith('/admin/')
+}
+
+const customerPages = ['menu', 'cart', 'checkout', 'orders', 'confirmation']
+
 function getAllowedPage(page, user) {
+  // Super admins only use the admin pages. They do not place orders.
+  if (user?.role === 'super_admin') {
+    if (page.startsWith('admin-')) {
+      return page
+    }
+
+    if (customerPages.includes(page) || page.startsWith('staff-')) {
+      return 'admin-overview'
+    }
+
+    return page
+  }
+
+  // Everyone else is sent back to their own home page.
+  if (page.startsWith('admin-')) {
+    return user?.role === 'cafeteria_staff' ? 'staff-dashboard' : 'menu'
+  }
+
   if (page.startsWith('staff-') && user?.role !== 'cafeteria_staff') {
     return 'menu'
   }
@@ -58,6 +89,10 @@ function getPage(path) {
     return pages[path] || 'staff-dashboard'
   }
 
+  if (isAdminPath(path)) {
+    return pages[path] || 'admin-overview'
+  }
+
   return pages[path] || 'login'
 }
 
@@ -74,6 +109,14 @@ const pages = {
   '/staff/orders': 'staff-orders',
   '/staff/menu': 'staff-menu',
   '/staff/summary': 'staff-summary',
+  '/admin': 'admin-overview',
+  '/admin/users': 'admin-users',
+  '/admin/staff': 'admin-staff',
+  '/admin/reports': 'admin-reports',
+  '/admin/audit-logs': 'admin-audit',
+  '/admin/settings': 'admin-settings',
+  '/admin/menu': 'admin-menu',
+  '/admin/staff-dashboard': 'admin-staff-dashboard',
 }
 
 const paths = {
@@ -88,6 +131,14 @@ const paths = {
   'staff-orders': '/staff/orders',
   'staff-menu': '/staff/menu',
   'staff-summary': '/staff/summary',
+  'admin-overview': '/admin',
+  'admin-users': '/admin/users',
+  'admin-staff': '/admin/staff',
+  'admin-reports': '/admin/reports',
+  'admin-audit': '/admin/audit-logs',
+  'admin-settings': '/admin/settings',
+  'admin-menu': '/admin/menu',
+  'admin-staff-dashboard': '/admin/staff-dashboard',
 }
 
 function App() {
@@ -227,10 +278,16 @@ function App() {
     }
 
     if (nextPage === 'home') {
-      nextPage = user?.role === 'cafeteria_staff' ? 'staff-dashboard' : 'menu'
+      if (user?.role === 'super_admin') {
+        nextPage = 'admin-overview'
+      } else if (user?.role === 'cafeteria_staff') {
+        nextPage = 'staff-dashboard'
+      } else {
+        nextPage = 'menu'
+      }
     }
 
-    const needsLogin = ['cart', 'checkout', 'orders'].includes(nextPage) || nextPage.startsWith('staff-')
+    const needsLogin = ['cart', 'checkout', 'orders'].includes(nextPage) || nextPage.startsWith('staff-') || nextPage.startsWith('admin-')
 
     if (needsLogin && !localStorage.getItem('token')) {
       nextPage = 'login'
@@ -294,6 +351,23 @@ function App() {
         {page === 'staff-menu' && <StaffMenu />}
         {page === 'staff-summary' && <StaffDailySummary onNavigate={handleNavigate} />}
       </StaffNavigation>
+    )
+  }
+
+  if (page.startsWith('admin-') && sessionUser?.role === 'super_admin') {
+    return (
+      <AdminNavigation page={page} onNavigate={handleNavigate}>
+        {page === 'admin-overview' && <AdminOverview onNavigate={handleNavigate} />}
+        {page === 'admin-users' && <AdminUsers currentUserId={sessionUser.user_id} />}
+        {page === 'admin-staff' && <AdminStaff />}
+        {page === 'admin-reports' && <AdminReports />}
+        {page === 'admin-audit' && <AdminAuditLogs />}
+        {page === 'admin-settings' && <AdminSettings />}
+        {page === 'admin-menu' && <StaffMenu />}
+        {page === 'admin-staff-dashboard' && (
+          <StaffDashboard onNavigate={handleNavigate} showTasks={false} />
+        )}
+      </AdminNavigation>
     )
   }
 

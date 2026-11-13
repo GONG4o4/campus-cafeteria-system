@@ -1,0 +1,90 @@
+.admin-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.admin-cards .staff-count {
+  margin-bottom: 0;
+}
+
+.admin-search {
+  margin-bottom: 20px;
+}
+
+.admin-search label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.admin-search div {
+  display: flex;
+  gap: 12px;
+}
+
+.admin-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #e9dcc3;
+  border-radius: 12px;
+  background: #fffcf5;
+  font: inherit;
+}
+
+.staff-menu-table select {
+  padding: 8px 10px;
+  border: 1px solid #e9dcc3;
+  border-radius: 10px;
+  background: #fffcf5;
+  font: inherit;
+}
+
+.admin-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e3f1e5;
+  color: #2f6b3a;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.admin-badge--off {
+  background: #f6dcdf;
+  color: #a51c30;
+}
+
+.admin-empty {
+  padding: 20px;
+}
+
+.admin-form {
+  max-width: 560px;
+}
+
+.admin-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+@media (max-width: 1000px) {
+  .admin-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-search div {
+    flex-direction: column;
+  }
+}
