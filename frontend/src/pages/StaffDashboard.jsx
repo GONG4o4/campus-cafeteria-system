@@ -24,7 +24,7 @@ function getTodayInManila() {
   return `${date.year}-${date.month}-${date.day}`
 }
 
-export default function StaffDashboard({ onNavigate }) {
+export default function StaffDashboard({ onNavigate, showTasks = true }) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -169,6 +169,7 @@ export default function StaffDashboard({ onNavigate }) {
         )}
       </section>
 
+      {showTasks && (
       <section aria-labelledby="staff-tasks-heading">
         <h2 id="staff-tasks-heading">What do you need to do?</h2>
 
@@ -192,6 +193,7 @@ export default function StaffDashboard({ onNavigate }) {
           ))}
         </div>
       </section>
+      )}
     </main>
   )
 }

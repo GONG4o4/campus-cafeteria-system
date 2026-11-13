@@ -13,9 +13,10 @@ const transitions = {
   ready: 'picked_up',
 }
 
-router.use(authenticateToken, requireRole('cafeteria_staff'))
+router.use(authenticateToken)
 
-router.get('/orders', async (req, res) => {
+// Super admins can view the staff dashboard, but only staff update orders.
+router.get('/orders', requireRole('cafeteria_staff', 'super_admin'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
@@ -55,7 +56,7 @@ router.get('/orders', async (req, res) => {
   }
 })
 
-router.patch('/orders/:id/status', async (req, res) => {
+router.patch('/orders/:id/status', requireRole('cafeteria_staff'), async (req, res) => {
   const orderId = Number(req.params.id)
 
   if (

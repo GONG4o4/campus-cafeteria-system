@@ -8,6 +8,7 @@ const authTest = require("./routes/authTest");
 const menu = require("./routes/menu");
 const orders = require("./routes/orders")
 const staffOrders = require("./routes/staffOrders")
+const admin = require("./routes/admin");
 
 const {
     authenticateToken,
@@ -29,16 +30,36 @@ app.use("/api/auth", authTest);
 app.use("/api/menu", menu);
 app.use("/api/orders", orders);
 app.use("/api/staff", staffOrders);
+app.use("/api/admin", admin);
 
 app.get("/api/health", (req, res) => {
     res.json({ message: "Backend is working" });
 });
 
-app.get("/api/test/protected", authenticateToken, (req, res) => {
-    res.json({
-        message: "You are Authenticated!!!",
-        user: req.user
-    });
+app.get("/api/test/protected", authenticateToken, async (req, res) => {
+    try {
+        // Make sure the account was not deactivated or given a new role
+        // after this token was created.
+        const result = await pool.query(
+            "SELECT role, is_active FROM users WHERE user_id = $1",
+            [req.user.user_id]
+        );
+
+        const user = result.rows[0];
+
+        if (!user || user.is_active === false || user.role !== req.user.role) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        res.json({
+            message: "You are Authenticated!!!",
+            user: req.user
+        });
+    } catch (error) {
+        console.error("Session check failed:", error.message);
+
+        res.status(500).json({ message: "Internal server error" });
+    }
 });
 
 app.get(
