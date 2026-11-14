@@ -1,7 +1,7 @@
 const express = require("express");
 const pool = require("../db");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
-const { createCheckoutSession } = require("../services/paymongo");
+const { createPaymentRequest } = require("../services/hitpay");
 
 const router = express.Router();
 
@@ -179,20 +179,17 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
                 }
 
                 const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
-                const successUrl = `${clientUrl}/payment/success?order_id=${order.order_id}`;
-                const cancelUrl = `${clientUrl}/payment/cancelled?order_id=${order.order_id}`;
+                const redirectUrl = `${clientUrl}/payment/success?order_id=${order.order_id}`;
 
-                const paymongoData = await createCheckoutSession(
+                const hitpayData = await createPaymentRequest(
                     order.order_id,
                     order.total_amount,
-                    orderItems,
-                    successUrl,
-                    cancelUrl
+                    redirectUrl
                 );
 
                 await client.query(
                     `INSERT INTO payments (order_id, checkout_session_id, reference_number, amount, status) VALUES ($1, $2, $3, $4, 'pending')`,
-                    [order.order_id, paymongoData.checkoutSessionId, paymongoData.referenceNumber, order.total_amount]
+                    [order.order_id, hitpayData.paymentRequestId, hitpayData.referenceNumber, order.total_amount]
                 );
 
                 await client.query("COMMIT");
@@ -200,7 +197,7 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
                 return res.status(201).json({
                     message: "Order created. Please complete payment.",
                     order_id: order.order_id,
-                    checkout_url: paymongoData.checkoutUrl,
+                    checkout_url: hitpayData.checkoutUrl,
                     total_amount: order.total_amount
                 });
 

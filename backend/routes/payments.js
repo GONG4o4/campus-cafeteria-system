@@ -1,16 +1,16 @@
 const express = require('express');
 const pool = require('../db');
-const { verifyWebhookSignature } = require('../services/paymongo');
+const { verifyWebhookSignature } = require('../services/hitpay');
 const { assignQueueNumber } = require('../utils/queue');
 
 const router = express.Router();
 
 router.post('/webhook', async (req, res) => {
-    const signatureHeader = req.get('Paymongo-Signature');
-    const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET;
+    const signatureHeader = req.get('Hitpay-Signature');
+    const webhookSalt = process.env.HITPAY_WEBHOOK_SALT;
 
-    if (!webhookSecret) {
-        console.error('Webhook secret is not configured.');
+    if (!webhookSalt) {
+        console.error('Webhook salt is not configured.');
         return res.status(500).send('Webhook configuration error');
     }
 
@@ -18,10 +18,10 @@ router.post('/webhook', async (req, res) => {
         return res.status(400).send('Missing signature or body');
     }
 
-    const isValid = verifyWebhookSignature(req.body, signatureHeader, webhookSecret);
+    const isValid = verifyWebhookSignature(req.body, signatureHeader, webhookSalt);
 
     if (!isValid) {
-       console.error('Invalid PayMongo webhook signature');
+        console.error('Invalid HitPay webhook signature');
         return res.status(400).send('Invalid signature');
     }
 
@@ -32,16 +32,12 @@ router.post('/webhook', async (req, res) => {
         return res.status(400).send('Invalid JSON payload');
     }
 
-    const eventType = event.data?.attributes?.type;
-    const checkoutSessionId = event.data?.attributes?.data?.id;
-    const eventId = event.data?.id;
+    const eventObject = req.get('Hitpay-Event-Object');
+    const paymentRequestId = event.id;
+    const eventId = event.id + '_' + Date.now();
 
-    if (!eventType || !checkoutSessionId || !eventId) {
-        return res.status(200).send('Event ignored: missing required fields');
-    }
-
-    if (eventType !== 'checkout_session.payment.paid') {
-        return res.status(200).send('Event ignored: not a payment paid event');
+    if (eventObject !== 'payment_request' || event.status !== 'completed' || !paymentRequestId) {
+        return res.status(200).send('Event ignored: not a completed payment request');
     }
 
     let client;
@@ -51,7 +47,7 @@ router.post('/webhook', async (req, res) => {
 
         const paymentResult = await client.query(
             'SELECT * FROM payments WHERE checkout_session_id = $1 FOR UPDATE',
-            [checkoutSessionId]
+            [paymentRequestId]
         );
 
         if (paymentResult.rows.length === 0) {
@@ -66,10 +62,10 @@ router.post('/webhook', async (req, res) => {
             return res.status(200).send('Already processed');
         }
 
-        const paidAmount = event.data?.attributes?.data?.attributes?.amount;
-        const expectedAmount = Math.round(Number(payment.amount) * 100);
+        const paidAmount = event.amount;
+        const expectedAmount = Number(payment.amount);
 
-        if (paidAmount !== expectedAmount) {
+        if (Number(paidAmount) !== expectedAmount) {
             await client.query('ROLLBACK');
             console.error(`Amount mismatch: expected ${expectedAmount}, got ${paidAmount}`);
             return res.status(400).send('Amount mismatch');
