@@ -213,7 +213,8 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
     console.error("Order creation failed: ", error.message);
 
     return res.status(500).json({
-        message: "Failed to create order"
+        message: "Failed to create order",
+        details: error.message
     });
 
     } finally {
@@ -280,20 +281,27 @@ router.patch("/:id/cancel", authenticateToken, requireRole("student"), async (re
     return res.status(409).json({
       message: "Only pending orders can be cancelled"
     });
-  } catch (error) {
+} catch (error){
     if (client) {
-        try { await client.query("ROLLBACK"); } catch (e) {}
+        try {
+            await client.query("ROLLBACK");
+        } catch (rollbackError){
+            console.error("Order rollback failed:", rollbackError.message);
+        }
     }
-    console.error("Order cancellation failed:", error.message);
+
+    console.error("Order creation failed: ", error.message);
 
     return res.status(500).json({
-      message: "Unable to cancel the order"
+        message: "Failed to create order",
+        details: error.message || "Unknown error"
     });
-  } finally {
-    if (client) {
-        client.release();
+
+    } finally {
+        if (client) {
+            client.release();
+        }
     }
-  }
 });
 
 module.exports = router;

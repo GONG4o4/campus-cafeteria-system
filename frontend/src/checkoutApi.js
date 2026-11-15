@@ -1,4 +1,4 @@
-export async function placeOrder(items) {
+export async function createCheckoutSession(items) {
   const token = localStorage.getItem('token')
 
   if (!token) {
@@ -23,7 +23,7 @@ export async function placeOrder(items) {
     })
   } catch (cause) {
     const error = new Error(
-      'We could not confirm whether your order was placed. Check order history before trying again.',
+      'Could not connect to the backend server. It may have crashed. Check the terminal.',
       { cause },
     )
     error.orderStatusUnknown = true
@@ -40,7 +40,7 @@ export async function placeOrder(items) {
     data = await response.json()
   } catch (cause) {
     const error = new Error(
-      'The order service returned an unreadable response. Check order history before trying again.',
+      'The order service returned an unreadable response. Check the terminal.',
       { cause },
     )
     error.orderStatusUnknown = true
@@ -48,22 +48,19 @@ export async function placeOrder(items) {
   }
 
   if (!response.ok) {
-    throw new Error(data?.message || 'Unable to place your order. Please try again.')
+    const errorDetails = data?.details ? ` (${data.details})` : '';
+    throw new Error((data?.message || 'Failed to initialize payment.') + errorDetails)
   }
 
   if (
     response.status !== 201 ||
     !Number.isInteger(data?.order_id) ||
     data.order_id < 1 ||
-    !Number.isInteger(data.queue_number) ||
-    data.queue_number < 1 ||
-    data.total_amount == null ||
-    !Number.isFinite(Number(data.total_amount)) ||
-    Number(data.total_amount) < 0 ||
-    typeof data.status !== 'string'
+    typeof data?.checkout_url !== 'string' ||
+    !data.checkout_url.startsWith('http')
   ) {
     const error = new Error(
-      'Your order could not be confirmed. Check order history before placing another order.',
+      'Your checkout session could not be confirmed. Check order history before placing another order.',
     )
     error.orderStatusUnknown = true
     throw error

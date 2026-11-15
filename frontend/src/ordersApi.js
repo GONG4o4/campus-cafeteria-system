@@ -1,4 +1,3 @@
-
 function formatOrder(order) {
   let createdAt = order.ordered_at
 
@@ -11,6 +10,7 @@ function formatOrder(order) {
     reference: `Order #${order.order_id}`,
     queueNumber: order.queue_number,
     status: order.status,
+    paymentStatus: order.payment_status,
     total: Number(order.total_amount),
 
     createdAt,
@@ -39,6 +39,7 @@ export async function getOrders(id, signal) {
         Authorization: `Bearer ${token}`,
       },
       signal,
+      cache: 'no-store'
     })
   } catch (error) {
     if (error.name === 'AbortError') {

@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Button from '../components/ui/Button'
 import { Alert, Loading } from '../components/ui/Feedback'
@@ -28,13 +27,13 @@ const statusLabels = {
 }
 
 function formatMoney(amount) {
-  return `₱${Number(amount).toLocaleString('en-PH', {
+  return `â‚±${Number(amount).toLocaleString('en-PH', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
 }
 
-export default function StaffOrderQueue({ onNavigate }) {
+export default function StaffOrderQueue() {
   const [orders, setOrders] = useState([])
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
@@ -87,9 +86,15 @@ export default function StaffOrderQueue({ onNavigate }) {
 
   useEffect(() => {
     const controller = new AbortController()
-    loadOrders(controller.signal)
+    
+    const timeoutId = setTimeout(() => {
+      loadOrders(controller.signal)
+    }, 0)
 
-    return () => controller.abort()
+    return () => {
+      clearTimeout(timeoutId)
+      controller.abort()
+    }
   }, [loadOrders])
 
   async function handleStatusUpdate(order) {
@@ -196,7 +201,7 @@ export default function StaffOrderQueue({ onNavigate }) {
                   <p>Order #{order.order_id}</p>
                   <p>
                     {order.order_date}
-                    {order.ordered_at && ` · ${order.ordered_at.slice(11, 16)}`}
+                    {order.ordered_at && ` Â· ${order.ordered_at.slice(11, 16)}`}
                   </p>
                 </div>
 
@@ -208,7 +213,7 @@ export default function StaffOrderQueue({ onNavigate }) {
               <div className="staff-queue-items">
                 {order.items.map((item, index) => (
                   <div key={`${item.menu_item_id}-${index}`}>
-                    <span>{item.quantity} × {item.name}</span>
+                    <span>{item.quantity} Ã— {item.name}</span>
                     <strong>{formatMoney(item.subtotal)}</strong>
                   </div>
                 ))}

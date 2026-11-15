@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import Login from './pages/login.jsx'
 import Register from './pages/register.jsx'
@@ -8,6 +7,8 @@ import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import OrderConfirmation from './pages/OrderConfirmation.jsx'
+import PaymentSuccess from './pages/PaymentSuccess.jsx'
+import PaymentCancelled from './pages/PaymentCancelled.jsx'
 import CafeteriaLayout from './components/CafeteriaLayout.jsx'
 import StaffNavigation from './components/StaffNavigation.jsx'
 import StaffDashboard from './pages/StaffDashboard.jsx'
@@ -20,7 +21,7 @@ import './App.css'
 import './student.css'
 import './pages/StaffDashboard.css'
 
-const protectedPaths = ['/home', '/cart', '/checkout', '/orders']
+const protectedPaths = ['/home', '/cart', '/checkout', '/orders', '/payment/success', '/payment/cancelled']
 
 function isConfirmationPath(path) {
   return /^\/order-confirmation\/[1-9]\d*$/.test(path)
@@ -41,7 +42,7 @@ function getAllowedPage(page, user) {
 
   if (
     user?.role === 'cafeteria_staff' &&
-    ['menu', 'cart', 'checkout', 'orders', 'confirmation'].includes(page)
+    ['menu', 'cart', 'checkout', 'orders', 'confirmation', 'payment-success', 'payment-cancelled'].includes(page)
   ) {
     return 'staff-dashboard'
   }
@@ -69,6 +70,8 @@ const pages = {
   '/checkout': 'checkout',
   '/orders': 'orders',
   '/register': 'register',
+  '/payment/success': 'payment-success',
+  '/payment/cancelled': 'payment-cancelled',
   '/staff': 'staff-dashboard',
   '/staff/dashboard': 'staff-dashboard',
   '/staff/orders': 'staff-orders',
@@ -84,6 +87,8 @@ const paths = {
   menu: '/menu',
   cart: '/cart',
   checkout: '/checkout',
+  'payment-success': '/payment/success',
+  'payment-cancelled': '/payment/cancelled',
   'staff-dashboard': '/staff',
   'staff-orders': '/staff/orders',
   'staff-menu': '/staff/menu',
@@ -97,13 +102,11 @@ function App() {
     changeQuantity,
     removeItem,
     clearCart,
-    removeOrderedItems,
     itemCount,
     total,
     checkoutItems,
   } = useCart()
 
-  const [confirmedOrder, setConfirmedOrder] = useState(null)
   const [sessionUser, setSessionUser] = useState(null)
   const [sessionError, setSessionError] = useState('')
 
@@ -230,7 +233,7 @@ function App() {
       nextPage = user?.role === 'cafeteria_staff' ? 'staff-dashboard' : 'menu'
     }
 
-    const needsLogin = ['cart', 'checkout', 'orders'].includes(nextPage) || nextPage.startsWith('staff-')
+    const needsLogin = ['cart', 'checkout', 'orders', 'payment-success', 'payment-cancelled'].includes(nextPage) || nextPage.startsWith('staff-')
 
     if (needsLogin && !localStorage.getItem('token')) {
       nextPage = 'login'
@@ -240,7 +243,6 @@ function App() {
 
     if (nextPage === 'login') {
       clearCart()
-      setConfirmedOrder(null)
       setSessionUser(null)
       setSessionError('')
       localStorage.removeItem('token')
@@ -250,18 +252,6 @@ function App() {
     setPage(nextPage)
 
     window.history.pushState({}, '', paths[nextPage] || '/login')
-    window.scrollTo(0, 0)
-  }
-
-  function handleOrderPlaced(order, selections, token) {
-    if (!token || token !== localStorage.getItem('token')) {
-      return
-    }
-
-    setConfirmedOrder(order)
-    removeOrderedItems(selections)
-    setPage('confirmation')
-    window.history.pushState({}, '', `/order-confirmation/${order.order_id}`)
     window.scrollTo(0, 0)
   }
 
@@ -290,7 +280,7 @@ function App() {
     return (
       <StaffNavigation page={page} onNavigate={handleNavigate}>
         {page === 'staff-dashboard' && <StaffDashboard onNavigate={handleNavigate} />}
-        {page === 'staff-orders' && <StaffOrderQueue onNavigate={handleNavigate} />}
+        {page === 'staff-orders' && <StaffOrderQueue />}
         {page === 'staff-menu' && <StaffMenu />}
         {page === 'staff-summary' && <StaffDailySummary onNavigate={handleNavigate} />}
       </StaffNavigation>
@@ -303,6 +293,8 @@ function App() {
     'checkout',
     'orders',
     'confirmation',
+    'payment-success',
+    'payment-cancelled',
   ].includes(page)
 
   if (!isStudentPage) {
@@ -310,11 +302,6 @@ function App() {
   }
 
   const confirmationId = Number(window.location.pathname.split('/').pop())
-  let receipt = null
-
-  if (confirmedOrder?.order_id === confirmationId) {
-    receipt = confirmedOrder
-  }
 
   return (
     <CafeteriaLayout
@@ -342,7 +329,6 @@ function App() {
           checkoutItems={checkoutItems}
           total={total}
           onNavigate={handleNavigate}
-          onOrderPlaced={handleOrderPlaced}
         />
       )}
 
@@ -351,10 +337,17 @@ function App() {
       {page === 'confirmation' && (
         <OrderConfirmation
           key={confirmationId}
-          order={receipt}
           orderId={confirmationId}
           onNavigate={handleNavigate}
         />
+      )}
+
+      {page === 'payment-success' && (
+        <PaymentSuccess onNavigate={handleNavigate} />
+      )}
+
+      {page === 'payment-cancelled' && (
+        <PaymentCancelled onNavigate={handleNavigate} />
       )}
     </CafeteriaLayout>
   )

@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from 'react'
 import Button from '../components/ui/Button'
 import { Alert } from '../components/ui/Feedback'
@@ -74,14 +73,17 @@ export default function StaffDashboard({ onNavigate }) {
 
   useEffect(() => {
     const controller = new AbortController()
-
-    loadOrders(controller.signal)
+    
+    const timeoutId = setTimeout(() => {
+      loadOrders(controller.signal)
+    }, 0)
 
     const interval = setInterval(() => {
       loadOrders(controller.signal)
     }, 10000)
 
     return () => {
+      clearTimeout(timeoutId)
       clearInterval(interval)
       controller.abort()
     }

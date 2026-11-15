@@ -3,14 +3,13 @@ import Button from '../components/ui/Button'
 import { Alert } from '../components/ui/Feedback'
 import { formatMoney } from '../utils/orders'
 import { getSubtotal } from '../utils/cart'
-import { placeOrder } from '../checkoutApi'
+import { createCheckoutSession } from '../checkoutApi'
 
 export default function Checkout({
   cart,
   checkoutItems,
   total,
   onNavigate,
-  onOrderPlaced,
 }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -26,26 +25,12 @@ export default function Checkout({
     setLoading(true)
     setError('')
 
-    const token = localStorage.getItem('token')
-    const selections = checkoutItems.map((item) => ({ ...item }))
-    const selectedMeals = selections.map((selection) => {
-      const meal = cart.find((item) => item.menu_item_id === selection.menu_item_id)
-
-      return {
-        menu_item_id: selection.menu_item_id,
-        name: meal.name,
-        quantity: selection.quantity,
-      }
-    })
-
     try {
-      const result = await placeOrder(selections)
-      const confirmedOrder = { ...result, items: selectedMeals }
-      onOrderPlaced(confirmedOrder, selections, token)
+      const result = await createCheckoutSession(checkoutItems)
+      window.location.href = result.checkout_url
     } catch (requestError) {
       setError(requestError.message || 'Unable to place your order.')
       setOrderStatusUnknown(Boolean(requestError.orderStatusUnknown))
-    } finally {
       submitting.current = false
       setLoading(false)
     }
@@ -56,7 +41,7 @@ export default function Checkout({
       <div className="page-intro">
         <div>
             <h1>Checkout</h1>
-            <p>Check your meals, then place your order.</p>
+            <p>Check your meals, then continue to payment.</p>
         </div>
       </div>
 
@@ -78,7 +63,7 @@ export default function Checkout({
 
               return (
                 <li key={selection.menu_item_id}>
-                  <span>{selection.quantity} × {item.name}</span>
+                  <span>{selection.quantity} Ã— {item.name}</span>
                   <strong>{formatMoney(getSubtotal(item))}</strong>
                 </li>
               )
@@ -94,7 +79,8 @@ export default function Checkout({
           {error && <Alert error>{error}</Alert>}
 
           <p className="checkout-note">
-            Your final total and queue number will be confirmed by the cafeteria.
+            You will be redirected to HitPay to complete your payment securely. 
+            Your final total and queue number will be confirmed after the payment is verified.
           </p>
 
           <div className="checkout-actions">
@@ -102,7 +88,7 @@ export default function Checkout({
               onClick={handlePlaceOrder}
               disabled={loading || orderStatusUnknown}
             >
-              {loading ? 'Placing order...' : 'Place order'}
+              {loading ? 'Redirecting to payment...' : 'Continue to payment'}
             </Button>
             <Button
               variant="secondary"
