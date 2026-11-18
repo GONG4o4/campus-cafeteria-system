@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import Login from './pages/login.jsx'
 import Register from './pages/register.jsx'
@@ -8,26 +7,31 @@ import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
 import LandingPage from './pages/LandingPage.jsx'
 import OrderConfirmation from './pages/OrderConfirmation.jsx'
+import PaymentSuccess from './pages/PaymentSuccess.jsx'
+import PaymentCancelled from './pages/PaymentCancelled.jsx'
 import CafeteriaLayout from './components/CafeteriaLayout.jsx'
 import StaffNavigation from './components/StaffNavigation.jsx'
 import StaffDashboard from './pages/StaffDashboard.jsx'
 import StaffOrderQueue from './pages/StaffOrderQueue.jsx'
 import StaffMenu from './pages/StaffMenu.jsx'
 import StaffDailySummary from './pages/StaffDailySummary.jsx'
+
 import AdminNavigation from './components/AdminNavigation.jsx'
 import AdminOverview from './pages/AdminOverview.jsx'
 import AdminUsers from './pages/AdminUsers.jsx'
 import AdminStaff from './pages/AdminStaff.jsx'
 import AdminReports from './pages/AdminReports.jsx'
-import AdminAuditLogs from './pages/AdminAuditLogs.jsx'
 import AdminSettings from './pages/AdminSettings.jsx'
+import AdminAuditLogs from './pages/AdminAuditLogs.jsx'
+
 import { useCart } from './hooks/useCart'
 import { getSessionUser } from './authApi.js'
 import './App.css'
 import './student.css'
 import './pages/StaffDashboard.css'
+import './pages/AdminDashboard.css' 
 
-const protectedPaths = ['/home', '/cart', '/checkout', '/orders']
+const protectedPaths = ['/home', '/cart', '/checkout', '/orders', '/payment/success', '/payment/cancelled', '/admin', '/staff']
 
 function isConfirmationPath(path) {
   return /^\/order-confirmation\/[1-9]\d*$/.test(path)
@@ -45,36 +49,26 @@ function isAdminPath(path) {
   return path === '/admin' || path.startsWith('/admin/')
 }
 
-const customerPages = ['menu', 'cart', 'checkout', 'orders', 'confirmation']
-
 function getAllowedPage(page, user) {
-  // Super admins only use the admin pages. They do not place orders.
-  if (user?.role === 'super_admin') {
-    if (page.startsWith('admin-')) {
-      return page
-    }
-
-    if (customerPages.includes(page) || page.startsWith('staff-')) {
-      return 'admin-overview'
-    }
-
-    return page
-  }
-
-  // Everyone else is sent back to their own home page.
-  if (page.startsWith('admin-')) {
-    return user?.role === 'cafeteria_staff' ? 'staff-dashboard' : 'menu'
-  }
-
   if (page.startsWith('staff-') && user?.role !== 'cafeteria_staff') {
+    return 'menu'
+  }
+  if (page.startsWith('admin-') && user?.role !== 'admin') {
     return 'menu'
   }
 
   if (
     user?.role === 'cafeteria_staff' &&
-    ['menu', 'cart', 'checkout', 'orders', 'confirmation'].includes(page)
+    ['menu', 'cart', 'checkout', 'orders', 'confirmation', 'payment-success', 'payment-cancelled'].includes(page)
   ) {
     return 'staff-dashboard'
+  }
+
+  if (
+    user?.role === 'admin' &&
+    ['menu', 'cart', 'checkout', 'orders', 'confirmation', 'payment-success', 'payment-cancelled'].includes(page)
+  ) {
+    return 'admin-overview'
   }
 
   return page
@@ -104,6 +98,8 @@ const pages = {
   '/checkout': 'checkout',
   '/orders': 'orders',
   '/register': 'register',
+  '/payment/success': 'payment-success',
+  '/payment/cancelled': 'payment-cancelled',
   '/staff': 'staff-dashboard',
   '/staff/dashboard': 'staff-dashboard',
   '/staff/orders': 'staff-orders',
@@ -113,10 +109,8 @@ const pages = {
   '/admin/users': 'admin-users',
   '/admin/staff': 'admin-staff',
   '/admin/reports': 'admin-reports',
-  '/admin/audit-logs': 'admin-audit',
   '/admin/settings': 'admin-settings',
-  '/admin/menu': 'admin-menu',
-  '/admin/staff-dashboard': 'admin-staff-dashboard',
+  '/admin/logs': 'admin-logs',
 }
 
 const paths = {
@@ -127,6 +121,8 @@ const paths = {
   menu: '/menu',
   cart: '/cart',
   checkout: '/checkout',
+  'payment-success': '/payment/success',
+  'payment-cancelled': '/payment/cancelled',
   'staff-dashboard': '/staff',
   'staff-orders': '/staff/orders',
   'staff-menu': '/staff/menu',
@@ -135,10 +131,8 @@ const paths = {
   'admin-users': '/admin/users',
   'admin-staff': '/admin/staff',
   'admin-reports': '/admin/reports',
-  'admin-audit': '/admin/audit-logs',
   'admin-settings': '/admin/settings',
-  'admin-menu': '/admin/menu',
-  'admin-staff-dashboard': '/admin/staff-dashboard',
+  'admin-logs': '/admin/logs',
 }
 
 function App() {
@@ -148,35 +142,24 @@ function App() {
     changeQuantity,
     removeItem,
     clearCart,
-    removeOrderedItems,
     itemCount,
     total,
     checkoutItems,
   } = useCart()
 
-  const [confirmedOrder, setConfirmedOrder] = useState(null)
   const [sessionUser, setSessionUser] = useState(null)
   const [sessionError, setSessionError] = useState('')
 
   const [page, setPage] = useState(() => {
     const path = window.location.pathname
 
-    if (path === '/') {
-      return 'landing'
-    }
-
-    if (path === '/menu') {
-      return 'menu'
-    }
-
-    if (path === '/register') {
-      return 'register'
-    }
-
+    if (path === '/') return 'landing'
+    if (path === '/menu') return 'menu'
+    if (path === '/register') return 'register'
+    
     if (needsAuthentication(path) && localStorage.getItem('token')) {
       return 'checking'
     }
-
     return 'login'
   })
 
@@ -186,9 +169,7 @@ function App() {
   )
 
   useEffect(() => {
-    if (!needsAuthentication(window.location.pathname)) {
-      return
-    }
+    if (!needsAuthentication(window.location.pathname)) return
 
     const token = localStorage.getItem('token')
 
@@ -204,9 +185,7 @@ function App() {
       try {
         const user = await getSessionUser(token)
 
-        if (cancelled) {
-          return
-        }
+        if (cancelled) return
 
         if (user) {
           setSessionUser(user)
@@ -224,9 +203,7 @@ function App() {
           window.history.replaceState({}, '', '/login')
         }
       } catch (error) {
-        if (cancelled) {
-          return
-        }
+        if (cancelled) return
 
         setSessionError(error.message || 'Unable to check your session.')
         setPage('login')
@@ -278,16 +255,12 @@ function App() {
     }
 
     if (nextPage === 'home') {
-      if (user?.role === 'super_admin') {
-        nextPage = 'admin-overview'
-      } else if (user?.role === 'cafeteria_staff') {
-        nextPage = 'staff-dashboard'
-      } else {
-        nextPage = 'menu'
-      }
+      if (user?.role === 'cafeteria_staff') nextPage = 'staff-dashboard'
+      else if (user?.role === 'admin') nextPage = 'admin-overview'
+      else nextPage = 'menu'
     }
 
-    const needsLogin = ['cart', 'checkout', 'orders'].includes(nextPage) || nextPage.startsWith('staff-') || nextPage.startsWith('admin-')
+    const needsLogin = ['cart', 'checkout', 'orders', 'payment-success', 'payment-cancelled'].includes(nextPage) || nextPage.startsWith('staff-') || nextPage.startsWith('admin-')
 
     if (needsLogin && !localStorage.getItem('token')) {
       nextPage = 'login'
@@ -297,7 +270,6 @@ function App() {
 
     if (nextPage === 'login') {
       clearCart()
-      setConfirmedOrder(null)
       setSessionUser(null)
       setSessionError('')
       localStorage.removeItem('token')
@@ -310,24 +282,11 @@ function App() {
     window.scrollTo(0, 0)
   }
 
-  function handleOrderPlaced(order, selections, token) {
-    if (!token || token !== localStorage.getItem('token')) {
-      return
-    }
-
-    setConfirmedOrder(order)
-    removeOrderedItems(selections)
-    setPage('confirmation')
-    window.history.pushState({}, '', `/order-confirmation/${order.order_id}`)
-    window.scrollTo(0, 0)
-  }
-
   function handleAddToCart(item) {
     if (!localStorage.getItem('token')) {
       handleNavigate('login')
       return
     }
-
     addItem(item)
   }
 
@@ -335,48 +294,36 @@ function App() {
     return <main style={{ padding: '2rem' }}>Checking your session...</main>
   }
 
-  if (page === 'register') {
-    return <Register onNavigate={handleNavigate} />
+  if (page === 'register') return <Register onNavigate={handleNavigate} />
+  if (page === 'landing') return <LandingPage onNavigate={handleNavigate} />
+
+  if (page.startsWith('admin-') && sessionUser?.role === 'admin') {
+    return (
+      <AdminNavigation page={page} onNavigate={handleNavigate}>
+        {page === 'admin-overview' && <AdminOverview onNavigate={handleNavigate} />}
+        {page === 'admin-users' && <AdminUsers />}
+        {page === 'admin-staff' && <AdminStaff />}
+        {page === 'admin-reports' && <AdminReports />}
+        {page === 'admin-settings' && <AdminSettings />}
+        {page === 'admin-logs' && <AdminAuditLogs />}
+      </AdminNavigation>
+    )
   }
 
-  if (page === 'landing') {
-    return <LandingPage onNavigate={handleNavigate} />
-  }
-
+  // Staff Pages
   if (page.startsWith('staff-') && sessionUser?.role === 'cafeteria_staff') {
     return (
       <StaffNavigation page={page} onNavigate={handleNavigate}>
         {page === 'staff-dashboard' && <StaffDashboard onNavigate={handleNavigate} />}
-        {page === 'staff-orders' && <StaffOrderQueue onNavigate={handleNavigate} />}
+        {page === 'staff-orders' && <StaffOrderQueue />}
         {page === 'staff-menu' && <StaffMenu />}
         {page === 'staff-summary' && <StaffDailySummary onNavigate={handleNavigate} />}
       </StaffNavigation>
     )
   }
 
-  if (page.startsWith('admin-') && sessionUser?.role === 'super_admin') {
-    return (
-      <AdminNavigation page={page} onNavigate={handleNavigate}>
-        {page === 'admin-overview' && <AdminOverview onNavigate={handleNavigate} />}
-        {page === 'admin-users' && <AdminUsers currentUserId={sessionUser.user_id} />}
-        {page === 'admin-staff' && <AdminStaff />}
-        {page === 'admin-reports' && <AdminReports />}
-        {page === 'admin-audit' && <AdminAuditLogs />}
-        {page === 'admin-settings' && <AdminSettings />}
-        {page === 'admin-menu' && <StaffMenu />}
-        {page === 'admin-staff-dashboard' && (
-          <StaffDashboard onNavigate={handleNavigate} showTasks={false} />
-        )}
-      </AdminNavigation>
-    )
-  }
-
   const isStudentPage = [
-    'menu',
-    'cart',
-    'checkout',
-    'orders',
-    'confirmation',
+    'menu', 'cart', 'checkout', 'orders', 'confirmation', 'payment-success', 'payment-cancelled',
   ].includes(page)
 
   if (!isStudentPage) {
@@ -384,11 +331,6 @@ function App() {
   }
 
   const confirmationId = Number(window.location.pathname.split('/').pop())
-  let receipt = null
-
-  if (confirmedOrder?.order_id === confirmationId) {
-    receipt = confirmedOrder
-  }
 
   return (
     <CafeteriaLayout
@@ -416,7 +358,6 @@ function App() {
           checkoutItems={checkoutItems}
           total={total}
           onNavigate={handleNavigate}
-          onOrderPlaced={handleOrderPlaced}
         />
       )}
 
@@ -425,10 +366,17 @@ function App() {
       {page === 'confirmation' && (
         <OrderConfirmation
           key={confirmationId}
-          order={receipt}
           orderId={confirmationId}
           onNavigate={handleNavigate}
         />
+      )}
+
+      {page === 'payment-success' && (
+        <PaymentSuccess onNavigate={handleNavigate} />
+      )}
+
+      {page === 'payment-cancelled' && (
+        <PaymentCancelled onNavigate={handleNavigate} />
       )}
     </CafeteriaLayout>
   )
