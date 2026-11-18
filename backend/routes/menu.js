@@ -18,6 +18,32 @@ const parseMenuId = (value) => {
         : null;
 };
 
+// image_url is optional. An empty string is saved as NULL.
+const cleanImageUrl = (value) => {
+    if (typeof value === "string") {
+        return value.trim() || null;
+    }
+
+    return value;
+};
+
+const isValidImageUrl = (value) => {
+    if (value === null) {
+        return true;
+    }
+
+    if (typeof value !== "string" || value.length > 500) {
+        return false;
+    }
+
+    try {
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+        return false;
+    }
+};
+
 
 router.get("/", async (req, res) => {
     try {
@@ -74,8 +100,11 @@ router.post("/", authenticateToken, requireRole("cafeteria_staff", "super_admin"
         name,
         description = null,
         price,
-        is_available = true
+        is_available = true,
+        image_url = null
     } = req.body || {};
+
+    const imageUrl = cleanImageUrl(image_url);
 
 
     if (
@@ -85,7 +114,8 @@ router.post("/", authenticateToken, requireRole("cafeteria_staff", "super_admin"
         (description !== null && typeof description !== "string") ||
         typeof is_available !== "boolean" ||
         !["string", "number"].includes(typeof price) ||
-        !/^\d{1,8}(\.\d{1,2})?$/.test(String(price))
+        !/^\d{1,8}(\.\d{1,2})?$/.test(String(price)) ||
+        !isValidImageUrl(imageUrl)
     ) {
         return res.status(400).json({
             message: "Invalid menu item information"
@@ -95,14 +125,15 @@ router.post("/", authenticateToken, requireRole("cafeteria_staff", "super_admin"
     try {
         const result = await pool.query(
             `INSERT INTO menu_items
-             (name, description, price, is_available)
-             VALUES ($1, $2, $3, $4)
+             (name, description, price, is_available, image_url)
+             VALUES ($1, $2, $3, $4, $5)
              RETURNING *`,
             [
                 name.trim(),
                 description,
                 String(price),
-                is_available
+                is_available,
+                imageUrl
             ]
         );
 
@@ -135,8 +166,11 @@ router.put("/:id", authenticateToken, requireRole("cafeteria_staff", "super_admi
         name,
         description = null,
         price,
-        is_available = true
+        is_available = true,
+        image_url = null
     } = req.body || {};
+
+    const imageUrl = cleanImageUrl(image_url);
 
     if (
         typeof name !== "string" ||
@@ -145,7 +179,8 @@ router.put("/:id", authenticateToken, requireRole("cafeteria_staff", "super_admi
         (description !== null && typeof description !== "string") ||
         typeof is_available !== "boolean" ||
         !["string", "number"].includes(typeof price) ||
-        !/^\d{1,8}(\.\d{1,2})?$/.test(String(price))
+        !/^\d{1,8}(\.\d{1,2})?$/.test(String(price)) ||
+        !isValidImageUrl(imageUrl)
     ) {
         return res.status(400).json({
             message: "Invalid menu item information"
@@ -159,14 +194,16 @@ router.put("/:id", authenticateToken, requireRole("cafeteria_staff", "super_admi
                  description = $2,
                  price = $3,
                  is_available = $4,
+                 image_url = $5,
                  updated_at = CURRENT_TIMESTAMP
-             WHERE menu_item_id = $5
+             WHERE menu_item_id = $6
              RETURNING *`,
             [
                 name.trim(),
                 description,
                 String(price),
                 is_available,
+                imageUrl,
                 id
             ]
         );

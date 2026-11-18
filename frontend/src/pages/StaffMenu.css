@@ -56,6 +56,33 @@
   line-height: 1.6;
 }
 
+.staff-meal-cell {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.staff-meal-cell > div {
+  min-width: 0;
+}
+
+.meal-form-help {
+  display: block;
+  margin-top: 8px;
+  color: #6f5f5a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.meal-image-preview {
+  max-width: 240px;
+  margin-top: 12px;
+}
+
+.meal-image-preview .meal-image {
+  margin-bottom: 0;
+}
+
 .staff-meal-price {
   white-space: nowrap;
 }

@@ -1,3 +1,17 @@
+// Checks that the text is a full http:// or https:// link (max 500 characters).
+export function isValidImageUrl(value) {
+  if (typeof value !== 'string' || !value || value.length > 500) {
+    return false
+  }
+
+  try {
+    const url = new URL(value)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 export function getMealErrors(meal) {
   const errors = {}
   const name = typeof meal.name === 'string' ? meal.name.trim() : ''
@@ -21,6 +35,13 @@ export function getMealErrors(meal) {
 
   if (typeof meal.available !== 'boolean') {
     errors.available = 'Choose whether the meal is available.'
+  }
+
+  // The image is optional, so only check it when something was typed.
+  if (meal.imageUrl != null && typeof meal.imageUrl !== 'string') {
+    errors.imageUrl = 'Enter the image link as text.'
+  } else if (meal.imageUrl?.trim() && !isValidImageUrl(meal.imageUrl.trim())) {
+    errors.imageUrl = 'Enter a full image link that starts with http:// or https:// (500 characters max).'
   }
 
   return errors

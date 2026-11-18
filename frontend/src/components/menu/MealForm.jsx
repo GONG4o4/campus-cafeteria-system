@@ -1,14 +1,23 @@
 import { useState } from 'react'
 import Button from '../ui/Button'
 import { Alert } from '../ui/Feedback'
-import { getMealErrors } from '../../utils/menu'
+import MealImage from './MealImage'
+import { getMealErrors, isValidImageUrl } from '../../utils/menu'
 
 export default function MealForm({ meal, onSave, onCancel, saving, error, blocked }) {
   const [name, setName] = useState(meal?.name || '')
   const [description, setDescription] = useState(meal?.description || '')
   const [price, setPrice] = useState(meal ? String(meal.price) : '')
   const [available, setAvailable] = useState(meal?.available ?? true)
+  const [imageUrl, setImageUrl] = useState(meal?.imageUrl || '')
   const [errors, setErrors] = useState({})
+
+  // Only preview links that look valid, so we don't request half-typed URLs.
+  let previewUrl = ''
+
+  if (isValidImageUrl(imageUrl.trim())) {
+    previewUrl = imageUrl.trim()
+  }
 
   function handleSubmit(event) {
     event.preventDefault()
@@ -17,7 +26,7 @@ export default function MealForm({ meal, onSave, onCancel, saving, error, blocke
       return
     }
 
-    const values = { name, description, price, available }
+    const values = { name, description, price, available, imageUrl }
     const validationErrors = getMealErrors(values)
     setErrors(validationErrors)
 
@@ -75,6 +84,27 @@ export default function MealForm({ meal, onSave, onCancel, saving, error, blocke
               aria-describedby={errors.price ? 'meal-price-error' : undefined}
             />
             {errors.price && <p id="meal-price-error" role="alert">{errors.price}</p>}
+          </div>
+
+          <div className="meal-form-field">
+            <label htmlFor="meal-image-url">Image URL (optional)</label>
+            <input
+              id="meal-image-url"
+              type="url"
+              value={imageUrl}
+              onChange={(event) => setImageUrl(event.target.value)}
+              placeholder="https://example.com/chicken-adobo.jpg"
+              maxLength={500}
+              aria-invalid={Boolean(errors.imageUrl)}
+              aria-describedby={errors.imageUrl ? 'meal-image-url-error meal-image-url-help' : 'meal-image-url-help'}
+            />
+            <span id="meal-image-url-help" className="meal-form-help">
+              Paste a link to a photo of the meal. Leave it blank to show a placeholder.
+            </span>
+            {errors.imageUrl && <p id="meal-image-url-error" role="alert">{errors.imageUrl}</p>}
+            <div className="meal-image-preview">
+              <MealImage src={previewUrl} alt={`Preview of ${name.trim() || 'the meal'}`} />
+            </div>
           </div>
 
           <label className="meal-available-field">
