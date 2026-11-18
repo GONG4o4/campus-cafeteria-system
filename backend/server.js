@@ -16,6 +16,7 @@ const menu = require("./routes/menu");
 const orders = require("./routes/orders");
 const staffOrders = require("./routes/staffOrders");
 const payments = require("./routes/payments");
+const admin = require("./routes/admin");
 
 const {
     authenticateToken,
@@ -39,6 +40,7 @@ app.use("/api/auth", authTest);
 app.use("/api/menu", menu);
 app.use("/api/orders", orders);
 app.use("/api/staff", staffOrders);
+app.use("/api/admin", admin); // Added from main branch
 
 app.get("/api/health", (req, res) => {
     res.json({ message: "Backend is working" });

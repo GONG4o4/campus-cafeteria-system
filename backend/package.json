@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "create-super-admin": "node scripts/createSuperAdmin.js"
   },
   "keywords": [],
   "author": "",
