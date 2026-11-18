@@ -173,7 +173,7 @@ test("POST with negative price returns 400", async () => {
 test("PUT with cafeteria_staff returns 200", async () => {
     pool.query = async (sql, params) => {
         assert.match(sql, /UPDATE menu_items/);
-        assert.equal(params[4], 1);
+        assert.equal(params[5], 1);
 
         return {
             rows: [{ menu_item_id: 1, ...validItem, price: 85 }]
@@ -260,6 +260,10 @@ const invalidMeals = [
     ["boolean price", { price: true }],
     ["invalid description", { description: [] }],
     ["non-boolean availability", { is_available: "false" }],
+    ["image URL that is not a link", { image_url: "chicken.jpg" }],
+    ["image URL with an unsafe protocol", { image_url: "javascript:alert(1)" }],
+    ["image URL longer than 500 characters", { image_url: "https://example.com/" + "a".repeat(500) }],
+    ["image URL that is not text", { image_url: 123 }],
 ];
 
 for (const [method, path] of [["POST", "/api/menu"], ["PUT", "/api/menu/1"]]) {
@@ -297,11 +301,49 @@ for (const [method, path] of [["POST", "/api/menu"], ["PUT", "/api/menu/1"]]) {
     }
 }
 
+test("POST saves a trimmed image URL", async () => {
+    const imageUrl = "https://example.com/adobo.jpg";
+
+    pool.query = async (sql, params) => {
+        assert.match(sql, /image_url/);
+        assert.equal(params[4], imageUrl);
+        return { rows: [{ menu_item_id: 1, ...validItem, image_url: imageUrl }] };
+    };
+
+    const response = await request("POST", "/api/menu", "cafeteria_staff", {
+        ...validItem, image_url: `  ${imageUrl}  `
+    });
+    assert.equal(response.status, 201);
+    assert.equal((await response.json()).item.image_url, imageUrl);
+});
+
+test("PUT updates the image URL and a blank image URL is saved as null", async () => {
+    let savedImage;
+
+    pool.query = async (sql, params) => {
+        assert.match(sql, /image_url = \$5/);
+        savedImage = params[4];
+        return { rows: [{ menu_item_id: 1, ...validItem, image_url: params[4] }] };
+    };
+
+    let response = await request("PUT", "/api/menu/1", "cafeteria_staff", {
+        ...validItem, image_url: "http://example.com/new.png"
+    });
+    assert.equal(response.status, 200);
+    assert.equal(savedImage, "http://example.com/new.png");
+
+    response = await request("PUT", "/api/menu/1", "cafeteria_staff", {
+        ...validItem, image_url: "   "
+    });
+    assert.equal(response.status, 200);
+    assert.equal(savedImage, null);
+});
+
 test("availability changes update the menu without deleting meals or changing order totals", async () => {
     pool.query = async (sql, params) => {
         assert.match(sql, /UPDATE menu_items/);
         assert.doesNotMatch(sql, /DELETE|UPDATE\s+orders|UPDATE\s+order_items/i);
-        assert.deepEqual(params, [validItem.name, validItem.description, "75", false, 1]);
+        assert.deepEqual(params, [validItem.name, validItem.description, "75", false, null, 1]);
         return { rows: [{ menu_item_id: 1, ...validItem, is_available: false }] };
     };
 

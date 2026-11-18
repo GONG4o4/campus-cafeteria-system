@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import MenuCard from '../components/menu/MenuCard'
+import MenuCard, { MenuCardSkeleton } from '../components/menu/MenuCard'
 import Button from '../components/ui/Button'
 import { Alert, Loading } from '../components/ui/Feedback'
 
@@ -16,6 +16,9 @@ export default function Menu({ onAdd }) {
   const filteredItems = items
     .filter((item) => item.name.toLowerCase().includes(search))
     .filter((item) => availabilityFilter === 'all' || item.is_available === true)
+
+  // First load = nothing to show yet. Later refreshes keep the current cards on screen.
+  const firstLoad = loading && items.length === 0
 
   function handleAddItem(item) {
     if (item.is_available !== true) return
@@ -146,7 +149,18 @@ export default function Menu({ onAdd }) {
         </div>
       )}
 
-      {loading && <Loading>Loading the menu...</Loading>}
+      {firstLoad && (
+        <>
+          <Loading>Loading the menu...</Loading>
+          <div className="menu-grid" aria-busy="true">
+            {[1, 2, 3, 4, 5, 6].map((number) => (
+              <MenuCardSkeleton key={number} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {loading && !firstLoad && <Loading>Refreshing the menu...</Loading>}
 
       {!loading && error && (
         <Alert error>
@@ -164,7 +178,7 @@ export default function Menu({ onAdd }) {
         </div>
       )}
 
-      {!loading && !error && items.length > 0 && filteredItems.length === 0 && (
+      {!firstLoad && !error && items.length > 0 && filteredItems.length === 0 && (
         <div className="student-empty">
           <h2>No meals found</h2>
           <p>
@@ -187,7 +201,7 @@ export default function Menu({ onAdd }) {
         </div>
       )}
 
-      {!loading && !error && filteredItems.length > 0 && (
+      {!firstLoad && !error && filteredItems.length > 0 && (
         <div className="menu-grid">
           {filteredItems.map((item) => (
             <MenuCard

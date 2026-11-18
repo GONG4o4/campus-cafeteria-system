@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import Button from '../components/ui/Button'
 import { Alert, Loading } from '../components/ui/Feedback'
 import MealForm from '../components/menu/MealForm'
-import { getMenu, notifyMenuChanged, saveMeal } from '../menuApi'
+import MealImage from '../components/menu/MealImage'
+import { deleteMeal, getMenu, notifyMenuChanged, saveMeal } from '../menuApi'
 import { formatMoney } from '../utils/orders'
 import './StaffMenu.css'
 
@@ -15,6 +16,7 @@ export default function StaffMenu() {
   const [editingMeal, setEditingMeal] = useState(null)
   const [saving, setSaving] = useState(false)
   const [savingId, setSavingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const [saveError, setSaveError] = useState('')
   const [message, setMessage] = useState('')
   const [saveStatusUnknown, setSaveStatusUnknown] = useState(false)
@@ -108,7 +110,40 @@ export default function StaffMenu() {
     }
   }
 
-  const controlsDisabled = saving || loading || saveStatusUnknown
+  async function handleDelete(meal) {
+    if (submitting.current || saveStatusUnknown) {
+      return
+    }
+
+    if (!window.confirm(`Delete ${meal.name} from the menu? This cannot be undone.`)) {
+      return
+    }
+
+    submitting.current = true
+    setDeletingId(meal.id)
+    setSaveError('')
+    setMessage('')
+
+    try {
+      await deleteMeal(meal.id)
+
+      setMeals((currentMeals) =>
+        currentMeals.filter((currentMeal) => currentMeal.id !== meal.id),
+      )
+      setMessage(`${meal.name} was deleted from the menu.`)
+      notifyMenuChanged()
+    } catch (requestError) {
+      setSaveError(requestError.message || 'Unable to delete the meal.')
+      setSaveStatusUnknown(Boolean(requestError.saveStatusUnknown))
+    } finally {
+      submitting.current = false
+      setDeletingId(null)
+    }
+  }
+
+  // busy = a save or delete is still running, so other buttons wait for it
+  const busy = saving || deletingId !== null
+  const controlsDisabled = busy || loading || saveStatusUnknown
 
   return (
     <main className="student-page staff-page">
@@ -120,7 +155,7 @@ export default function StaffMenu() {
         <div className="staff-menu-actions">
           <Button
             variant="secondary"
-            disabled={loading || saving}
+            disabled={loading || busy}
             onClick={() => setReload(reload + 1)}
           >
             Refresh menu
@@ -184,8 +219,13 @@ export default function StaffMenu() {
                 {meals.map((meal) => (
                   <tr key={meal.id}>
                     <th scope="row">
-                      <span>{meal.name}</span>
-                      <p>{meal.description || 'No description added.'}</p>
+                      <div className="staff-meal-cell">
+                        <MealImage src={meal.imageUrl} alt={`Photo of ${meal.name}`} small />
+                        <div>
+                          <span>{meal.name}</span>
+                          <p>{meal.description || 'No description added.'}</p>
+                        </div>
+                      </div>
                     </th>
                     <td className="staff-meal-price">{formatMoney(meal.price)}</td>
                     <td>
@@ -212,6 +252,14 @@ export default function StaffMenu() {
                           {saving && savingId === meal.id
                             ? 'Saving...'
                             : `Mark ${meal.available ? 'unavailable' : 'available'}`}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          disabled={controlsDisabled || showForm}
+                          aria-label={`Delete ${meal.name}`}
+                          onClick={() => handleDelete(meal)}
+                        >
+                          {deletingId === meal.id ? 'Deleting...' : 'Delete'}
                         </Button>
                       </div>
                     </td>

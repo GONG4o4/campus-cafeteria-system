@@ -1,4 +1,5 @@
 import Button from '../ui/Button'
+import MealImage from './MealImage'
 import { formatMoney } from '../../utils/orders'
 
 export default function MenuCard({ item, onAdd }) {
@@ -10,6 +11,7 @@ export default function MenuCard({ item, onAdd }) {
 
   return (
     <article className={cardClass}>
+      <MealImage src={item.image_url || ''} alt={`Photo of ${item.name}`} />
       <span className="meal-availability">
         {item.is_available ? 'Available' : 'Unavailable'}
       </span>
@@ -26,5 +28,19 @@ export default function MenuCard({ item, onAdd }) {
         </Button>
       </div>
     </article>
+  )
+}
+
+// Grey placeholder card shown while the menu is loading for the first time.
+export function MenuCardSkeleton() {
+  return (
+    <div className="menu-card menu-card-skeleton" aria-hidden="true">
+      <div className="skeleton-block skeleton-image" />
+      <div className="skeleton-block skeleton-badge" />
+      <div className="skeleton-block skeleton-title" />
+      <div className="skeleton-block skeleton-text" />
+      <div className="skeleton-block skeleton-text skeleton-text--short" />
+      <div className="skeleton-block skeleton-button" />
+    </div>
   )
 }
