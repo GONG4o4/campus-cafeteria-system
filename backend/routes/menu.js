@@ -69,7 +69,7 @@ router.get("/:id", async (req, res) => {
     }
 });
 
-router.post("/", authenticateToken, requireRole("cafeteria_staff"), async (req, res) => {
+router.post("/", authenticateToken, requireRole("cafeteria_staff", "super_admin"), async (req, res) => {
     const {
         name,
         description = null,
@@ -122,7 +122,7 @@ router.post("/", authenticateToken, requireRole("cafeteria_staff"), async (req, 
 
 
 
-router.put("/:id", authenticateToken, requireRole("cafeteria_staff"), async (req, res) => {
+router.put("/:id", authenticateToken, requireRole("cafeteria_staff", "super_admin"), async (req, res) => {
     const id = parseMenuId(req.params.id);
 
     if (id === null) {
@@ -191,7 +191,7 @@ router.put("/:id", authenticateToken, requireRole("cafeteria_staff"), async (req
     }
 });
 
-router.delete("/:id", authenticateToken, requireRole("cafeteria_staff"), async (req, res) => {
+router.delete("/:id", authenticateToken, requireRole("cafeteria_staff", "super_admin"), async (req, res) => {
     const id = parseMenuId(req.params.id);
 
     if (id === null) {

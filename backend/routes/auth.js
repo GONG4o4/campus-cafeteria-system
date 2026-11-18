@@ -18,7 +18,7 @@ router.post("/login", async (req, res) => {
 
 
     const result = await pool.query(
-      `SELECT user_id, fname, lname, email, password, role
+      `SELECT user_id, fname, lname, email, password, role, is_active
        FROM users
        WHERE email = $1`,
       [email]
@@ -30,6 +30,12 @@ router.post("/login", async (req, res) => {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({
         message: "Invalid email or password",
+      });
+    }
+
+    if (user.is_active === false) {
+      return res.status(403).json({
+        message: "This account has been deactivated. Please contact the administrator.",
       });
     }
 
@@ -67,6 +73,16 @@ router.post("/register", async (req, res) => {
 if (!fname || !lname || !email || !password) {
   return res.status(400).json({
     message: "First name, last name, email, and password are required",
+  });
+}
+
+  const setting = await pool.query(
+  "SELECT setting_value FROM system_settings WHERE setting_key = 'allow_registration'"
+);
+
+if (setting.rows.length > 0 && setting.rows[0].setting_value === false) {
+  return res.status(403).json({
+    message: "New account registration is currently closed.",
   });
 }
 
