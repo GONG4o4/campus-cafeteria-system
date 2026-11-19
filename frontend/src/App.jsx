@@ -16,6 +16,7 @@ import StaffOrderQueue from './pages/StaffOrderQueue.jsx'
 import StaffMenu from './pages/StaffMenu.jsx'
 import StaffDailySummary from './pages/StaffDailySummary.jsx'
 
+// New Admin Imports from main branch
 import AdminNavigation from './components/AdminNavigation.jsx'
 import AdminOverview from './pages/AdminOverview.jsx'
 import AdminUsers from './pages/AdminUsers.jsx'
@@ -29,7 +30,7 @@ import { getSessionUser } from './authApi.js'
 import './App.css'
 import './student.css'
 import './pages/StaffDashboard.css'
-import './pages/AdminDashboard.css' 
+import './pages/AdminDashboard.css'
 
 const protectedPaths = ['/home', '/cart', '/checkout', '/orders', '/payment/success', '/payment/cancelled', '/admin', '/staff']
 
@@ -49,11 +50,16 @@ function isAdminPath(path) {
   return path === '/admin' || path.startsWith('/admin/')
 }
 
+function isAdminRole(role) {
+  return role === 'admin' || role === 'super_admin'
+}
+
 function getAllowedPage(page, user) {
   if (page.startsWith('staff-') && user?.role !== 'cafeteria_staff') {
     return 'menu'
   }
-  if (page.startsWith('admin-') && user?.role !== 'admin') {
+  
+  if (page.startsWith('admin-') && !isAdminRole(user?.role)) {
     return 'menu'
   }
 
@@ -65,7 +71,7 @@ function getAllowedPage(page, user) {
   }
 
   if (
-    user?.role === 'admin' &&
+    isAdminRole(user?.role) &&
     ['menu', 'cart', 'checkout', 'orders', 'confirmation', 'payment-success', 'payment-cancelled'].includes(page)
   ) {
     return 'admin-overview'
@@ -78,15 +84,12 @@ function getPage(path) {
   if (isConfirmationPath(path)) {
     return 'confirmation'
   }
-
   if (isStaffPath(path)) {
     return pages[path] || 'staff-dashboard'
   }
-
   if (isAdminPath(path)) {
     return pages[path] || 'admin-overview'
   }
-
   return pages[path] || 'login'
 }
 
@@ -152,27 +155,21 @@ function App() {
 
   const [page, setPage] = useState(() => {
     const path = window.location.pathname
-
     if (path === '/') return 'landing'
     if (path === '/menu') return 'menu'
     if (path === '/register') return 'register'
-    
-    if (needsAuthentication(path) && localStorage.getItem('token')) {
-      return 'checking'
-    }
+    if (needsAuthentication(path) && localStorage.getItem('token')) return 'checking'
     return 'login'
   })
 
   const [checkingToken, setCheckingToken] = useState(
-    needsAuthentication(window.location.pathname) &&
-      Boolean(localStorage.getItem('token')),
+    needsAuthentication(window.location.pathname) && Boolean(localStorage.getItem('token')),
   )
 
   useEffect(() => {
     if (!needsAuthentication(window.location.pathname)) return
 
     const token = localStorage.getItem('token')
-
     if (!token) {
       localStorage.removeItem('user')
       window.history.replaceState({}, '', '/login')
@@ -184,7 +181,6 @@ function App() {
     async function checkToken() {
       try {
         const user = await getSessionUser(token)
-
         if (cancelled) return
 
         if (user) {
@@ -192,7 +188,6 @@ function App() {
           const requestedPage = getPage(window.location.pathname)
           const allowedPage = getAllowedPage(requestedPage, user)
           setPage(allowedPage)
-
           if (allowedPage !== requestedPage) {
             window.history.replaceState({}, '', paths[allowedPage])
           }
@@ -204,28 +199,21 @@ function App() {
         }
       } catch (error) {
         if (cancelled) return
-
         setSessionError(error.message || 'Unable to check your session.')
         setPage('login')
         window.history.replaceState({}, '', '/login')
       } finally {
-        if (!cancelled) {
-          setCheckingToken(false)
-        }
+        if (!cancelled) setCheckingToken(false)
       }
     }
 
     checkToken()
-
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [])
 
   useEffect(() => {
     function handleBack() {
       const path = window.location.pathname
-
       if (needsAuthentication(path) && !localStorage.getItem('token')) {
         setSessionUser(null)
         setPage('login')
@@ -234,15 +222,12 @@ function App() {
         const requestedPage = getPage(path)
         const allowedPage = getAllowedPage(requestedPage, sessionUser)
         setPage(allowedPage)
-
         if (allowedPage !== requestedPage) {
           window.history.replaceState({}, '', paths[allowedPage])
         }
       }
     }
-
     window.addEventListener('popstate', handleBack)
-
     return () => window.removeEventListener('popstate', handleBack)
   }, [sessionUser])
 
@@ -256,7 +241,7 @@ function App() {
 
     if (nextPage === 'home') {
       if (user?.role === 'cafeteria_staff') nextPage = 'staff-dashboard'
-      else if (user?.role === 'admin') nextPage = 'admin-overview'
+      else if (isAdminRole(user?.role)) nextPage = 'admin-overview'
       else nextPage = 'menu'
     }
 
@@ -277,7 +262,6 @@ function App() {
     }
 
     setPage(nextPage)
-
     window.history.pushState({}, '', paths[nextPage] || '/login')
     window.scrollTo(0, 0)
   }
@@ -297,7 +281,7 @@ function App() {
   if (page === 'register') return <Register onNavigate={handleNavigate} />
   if (page === 'landing') return <LandingPage onNavigate={handleNavigate} />
 
-  if (page.startsWith('admin-') && sessionUser?.role === 'admin') {
+  if (page.startsWith('admin-') && isAdminRole(sessionUser?.role)) {
     return (
       <AdminNavigation page={page} onNavigate={handleNavigate}>
         {page === 'admin-overview' && <AdminOverview onNavigate={handleNavigate} />}
@@ -310,7 +294,6 @@ function App() {
     )
   }
 
-  // Staff Pages
   if (page.startsWith('staff-') && sessionUser?.role === 'cafeteria_staff') {
     return (
       <StaffNavigation page={page} onNavigate={handleNavigate}>
@@ -340,7 +323,6 @@ function App() {
       authenticated={Boolean(localStorage.getItem('token'))}
     >
       {page === 'menu' && <Menu onAdd={handleAddToCart} />}
-
       {page === 'cart' && (
         <Cart
           cart={cart}
@@ -351,7 +333,6 @@ function App() {
           onNavigate={handleNavigate}
         />
       )}
-
       {page === 'checkout' && (
         <Checkout
           cart={cart}
@@ -360,9 +341,7 @@ function App() {
           onNavigate={handleNavigate}
         />
       )}
-
       {page === 'orders' && <OrderHistory />}
-
       {page === 'confirmation' && (
         <OrderConfirmation
           key={confirmationId}
@@ -370,14 +349,8 @@ function App() {
           onNavigate={handleNavigate}
         />
       )}
-
-      {page === 'payment-success' && (
-        <PaymentSuccess onNavigate={handleNavigate} />
-      )}
-
-      {page === 'payment-cancelled' && (
-        <PaymentCancelled onNavigate={handleNavigate} />
-      )}
+      {page === 'payment-success' && <PaymentSuccess onNavigate={handleNavigate} />}
+      {page === 'payment-cancelled' && <PaymentCancelled onNavigate={handleNavigate} />}
     </CafeteriaLayout>
   )
 }
