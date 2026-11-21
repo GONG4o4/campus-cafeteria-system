@@ -1,7 +1,7 @@
 import { test, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import { getMealErrors } from '../src/utils/menu.js'
-import { getMenu, saveMeal, notifyMenuChanged } from '../src/menuApi.js'
+import { getMealErrors, isValidImageUrl } from '../src/utils/menu.js'
+import { getMenu, saveMeal, deleteMeal, notifyMenuChanged } from '../src/menuApi.js'
 
 const originalFetch = globalThis.fetch
 const originalStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
@@ -56,7 +56,29 @@ test('menu retrieval normalizes API prices and availability', async () => {
   globalThis.fetch = async () => Response.json([savedMeal])
   assert.deepEqual(await getMenu(), [{
     id: 1, name: validMeal.name, description: validMeal.description, price: 75, available: true,
+    imageUrl: '',
   }])
+})
+
+test('menu retrieval keeps each meal image URL', async () => {
+  const imageUrl = 'https://example.com/rice.jpg'
+  globalThis.fetch = async () => Response.json([{ ...savedMeal, image_url: imageUrl }])
+  assert.equal((await getMenu())[0].imageUrl, imageUrl)
+  globalThis.fetch = async () => Response.json([{ ...savedMeal, image_url: 42 }])
+  await assert.rejects(getMenu(), /invalid menu list/)
+})
+
+test('image URLs are optional but must be full http or https links', () => {
+  assert.deepEqual(getMealErrors({ ...validMeal, imageUrl: '' }), {})
+  assert.deepEqual(getMealErrors({ ...validMeal, imageUrl: '  ' }), {})
+  assert.deepEqual(getMealErrors({ ...validMeal, imageUrl: 'https://example.com/a.png' }), {})
+
+  for (const imageUrl of ['rice.jpg', 'ftp://example.com/a.png', 'javascript:alert(1)', 'https://x.com/' + 'a'.repeat(500)]) {
+    assert.ok(getMealErrors({ ...validMeal, imageUrl }).imageUrl, imageUrl)
+  }
+
+  assert.equal(isValidImageUrl('http://example.com/a.png'), true)
+  assert.equal(isValidImageUrl(''), false)
 })
 
 test('invalid menu data and unreadable responses produce clear errors', async () => {
@@ -79,11 +101,45 @@ test('creating a meal sends only the validated fields and bearer token', async (
     assert.equal(options.headers.Authorization, 'Bearer staff-token')
     assert.deepEqual(JSON.parse(options.body), {
       name: validMeal.name, description: validMeal.description, price: '75.00', is_available: true,
+      image_url: null,
     })
     return Response.json({ item: savedMeal }, { status: 201 })
   }
   const result = await saveMeal({ ...validMeal, name: '  Chicken rice  ', user_id: 99, role: 'admin' })
   assert.equal(result.id, 1)
+})
+
+test('saving a meal sends the trimmed image URL', async () => {
+  const imageUrl = 'https://example.com/rice.jpg'
+  globalThis.fetch = async (url, options) => {
+    assert.equal(JSON.parse(options.body).image_url, imageUrl)
+    return Response.json({ item: { ...savedMeal, image_url: imageUrl } })
+  }
+  const result = await saveMeal({ ...validMeal, imageUrl: `  ${imageUrl}  ` }, 1)
+  assert.equal(result.imageUrl, imageUrl)
+  await assert.rejects(saveMeal({ ...validMeal, imageUrl: 'not a link' }), /full image link/)
+})
+
+test('deleting a meal uses DELETE with the bearer token', async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, 'http://localhost:3000/api/menu/1')
+    assert.equal(options.method, 'DELETE')
+    assert.equal(options.headers.Authorization, 'Bearer staff-token')
+    return Response.json({ item: savedMeal })
+  }
+  assert.equal(await deleteMeal(1), 1)
+})
+
+test('delete errors are clear and uncertain deletes are flagged', async () => {
+  await assert.rejects(deleteMeal(0), /invalid ID/)
+  globalThis.fetch = async () => Response.json({ message: 'referenced' }, { status: 409 })
+  await assert.rejects(deleteMeal(1), /Mark it unavailable instead/)
+  globalThis.fetch = async () => new Response('', { status: 403 })
+  await assert.rejects(deleteMeal(1), /Only cafeteria staff/)
+  globalThis.fetch = async () => { throw new Error('Offline') }
+  await assert.rejects(deleteMeal(1), (error) => error.saveStatusUnknown === true)
+  globalThis.fetch = async () => Response.json({ item: { ...savedMeal, menu_item_id: 2 } })
+  await assert.rejects(deleteMeal(1), (error) => error.saveStatusUnknown === true)
 })
 
 test('editing and changing availability uses PUT without deleting the meal', async () => {
