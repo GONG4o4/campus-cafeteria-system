@@ -2,7 +2,7 @@ import Button from '../ui/Button'
 import MealImage from './MealImage'
 import { formatMoney } from '../../utils/orders'
 
-export default function MenuCard({ item, onAdd }) {
+export default function MenuCard({ item, onAdd, isBestSeller = false }) {
   let cardClass = 'menu-card'
 
   if (!item.is_available) {
@@ -12,9 +12,17 @@ export default function MenuCard({ item, onAdd }) {
   return (
     <article className={cardClass}>
       <MealImage src={item.image_url || ''} alt={`Photo of ${item.name}`} />
-      <span className="meal-availability">
-        {item.is_available ? 'Available' : 'Unavailable'}
-      </span>
+      <div className="menu-card-tags">
+        <span className="meal-availability">
+          {item.is_available ? 'Available' : 'Unavailable'}
+        </span>
+        {isBestSeller && (
+          <span className="best-seller-badge">
+            <span aria-hidden="true">★</span>
+            Best Seller
+          </span>
+        )}
+      </div>
       <h2>{item.name}</h2>
       <p>{item.description || 'No description available.'}</p>
 

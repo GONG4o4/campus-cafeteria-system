@@ -171,6 +171,32 @@
   font-weight: 600;
 }
 
+/* Availability and Best Seller tags sit side by side under the photo,
+   and wrap onto a second line on narrow cards instead of overlapping. */
+.menu-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.best-seller-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #fff2d6;
+  color: #8a5900;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.best-seller-badge span {
+  color: #d18f00;
+}
+
 .menu-card--unavailable {
   background: #f6ecd8;
 }
