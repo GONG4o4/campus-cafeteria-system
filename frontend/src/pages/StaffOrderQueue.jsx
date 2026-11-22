@@ -27,7 +27,7 @@ const statusLabels = {
 }
 
 function formatMoney(amount) {
-  return `â‚±${Number(amount).toLocaleString('en-PH', {
+  return `₱${Number(amount).toLocaleString('en-PH', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
@@ -201,7 +201,7 @@ export default function StaffOrderQueue() {
                   <p>Order #{order.order_id}</p>
                   <p>
                     {order.order_date}
-                    {order.ordered_at && ` Â· ${order.ordered_at.slice(11, 16)}`}
+                    {order.ordered_at && ` · ${order.ordered_at.slice(11, 16)}`}
                   </p>
                 </div>
 
@@ -213,7 +213,7 @@ export default function StaffOrderQueue() {
               <div className="staff-queue-items">
                 {order.items.map((item, index) => (
                   <div key={`${item.menu_item_id}-${index}`}>
-                    <span>{item.quantity} Ã— {item.name}</span>
+                    <span>{item.quantity} × {item.name}</span>
                     <strong>{formatMoney(item.subtotal)}</strong>
                   </div>
                 ))}
