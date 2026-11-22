@@ -1,7 +1,8 @@
 const express = require("express");
 const pool = require("../db");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
-const { createPaymentRequest } = require("../services/hitpay");
+const { createPaymentRequest, getPaymentRequest } = require("../services/hitpay");
+const { confirmPayment } = require("../services/paymentConfirm");
 const { findActiveRestriction, getPenaltySummary, getPolicy } = require("../services/noShow");
 
 const router = express.Router();
@@ -99,6 +100,81 @@ router.get("/:id", authenticateToken, requireRole("student"), async (req, res) =
         return res.status(500).json({
             message: "Unable to load this order. Please try again."
         });
+    }
+});
+
+// Called by the payment success page. Asks HitPay directly if the order
+// was paid, and if so assigns the queue number. This works even when HitPay
+// cannot reach our webhook (for example when the backend runs on localhost).
+router.post("/:id/verify-payment", authenticateToken, requireRole("student"), async (req, res) => {
+    const id = Number(req.params.id);
+
+    if (!/^[1-9]\d*$/.test(req.params.id) || !Number.isSafeInteger(id) || id > 2147483647) {
+        return res.status(400).json({ message: "Invalid order ID" });
+    }
+
+    let client;
+    try {
+        // Only look at the student's own order.
+        const paymentResult = await pool.query(
+            `SELECT p.checkout_session_id, p.status
+             FROM payments p
+             JOIN orders o ON o.order_id = p.order_id
+             WHERE o.order_id = $1 AND o.user_id = $2
+             ORDER BY p.payment_id DESC
+             LIMIT 1`,
+            [id, req.user.user_id]
+        );
+
+        if (paymentResult.rows.length === 0) {
+            return res.status(404).json({ message: "Payment not found for this order" });
+        }
+
+        const payment = paymentResult.rows[0];
+
+        // Already paid or cancelled, nothing to check with HitPay.
+        if (payment.status !== "pending") {
+            return res.json({ payment_status: payment.status });
+        }
+
+        const hitpayPayment = await getPaymentRequest(payment.checkout_session_id);
+
+        if (hitpayPayment.status !== "completed") {
+            return res.json({ payment_status: "pending" });
+        }
+
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        const result = await confirmPayment(
+            client,
+            payment.checkout_session_id,
+            hitpayPayment.amount,
+            `verify_${payment.checkout_session_id}_${Date.now()}`
+        );
+
+        if (result === "paid") {
+            await client.query("COMMIT");
+            return res.json({ payment_status: "paid" });
+        }
+
+        await client.query("ROLLBACK");
+
+        if (result === "already_paid") {
+            return res.json({ payment_status: "paid" });
+        }
+
+        return res.status(400).json({ message: "Payment could not be confirmed" });
+    } catch (error) {
+        if (client) {
+            await client.query("ROLLBACK");
+        }
+        console.error("Payment verify failed:", error.message);
+        return res.status(500).json({ message: "Unable to check payment status. Please try again." });
+    } finally {
+        if (client) {
+            client.release();
+        }
     }
 });
 

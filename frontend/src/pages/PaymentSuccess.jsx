@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Button from '../components/ui/Button'
 import { Alert, Loading } from '../components/ui/Feedback'
-import { getOrders } from '../ordersApi'
+import { getOrders, verifyPayment } from '../ordersApi'
 import { formatMoney } from '../utils/orders'
 import PickupReminder from '../components/checkout/PickupReminder'
 
@@ -29,6 +29,14 @@ export default function PaymentSuccess({ onNavigate }) {
       if (!isMounted.current) return
 
       try {
+        // Ask HitPay (through our backend) if the payment went through.
+        // If this fails we still keep polling, since the webhook may finish it.
+        try {
+          await verifyPayment(orderId)
+        } catch (verifyError) {
+          console.error(verifyError)
+        }
+
         const data = await getOrders(orderId)
         
         if (!isMounted.current) return

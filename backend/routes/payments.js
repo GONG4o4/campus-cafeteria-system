@@ -1,7 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { verifyWebhookSignature } = require('../services/hitpay');
-const { assignQueueNumber } = require('../utils/queue');
+const { confirmPayment } = require('../services/paymentConfirm');
 
 const router = express.Router();
 
@@ -45,55 +45,22 @@ router.post('/webhook', async (req, res) => {
         client = await pool.connect();
         await client.query('BEGIN');
 
-        const paymentResult = await client.query(
-            'SELECT * FROM payments WHERE checkout_session_id = $1 FOR UPDATE',
-            [paymentRequestId]
-        );
+        const result = await confirmPayment(client, paymentRequestId, event.amount, eventId);
 
-        if (paymentResult.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(200).send('Event ignored: payment record not found');
+        if (result === 'paid') {
+            await client.query('COMMIT');
+            return res.status(200).send('Payment processed successfully');
         }
 
-        const payment = paymentResult.rows[0];
+        await client.query('ROLLBACK');
 
-        if (payment.status === 'paid') {
-            await client.query('ROLLBACK');
-            return res.status(200).send('Already processed');
-        }
-
-        const paidAmount = event.amount;
-        const expectedAmount = Number(payment.amount);
-
-        if (Number(paidAmount) !== expectedAmount) {
-            await client.query('ROLLBACK');
-            console.error(`Amount mismatch: expected ${expectedAmount}, got ${paidAmount}`);
+        if (result === 'amount_mismatch') {
             return res.status(400).send('Amount mismatch');
         }
-
-        await client.query(
-            `UPDATE payments 
-             SET status = 'paid', last_webhook_event_id = $1, updated_at = CURRENT_TIMESTAMP 
-             WHERE payment_id = $2`,
-            [eventId, payment.payment_id]
-        );
-
-        const dateResult = await client.query(
-            `SELECT TO_CHAR((CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date, 'YYYY-MM-DD') AS order_date`
-        );
-        const orderDate = dateResult.rows[0].order_date;
-
-        const queueNumber = await assignQueueNumber(client, orderDate);
-
-        await client.query(
-            `UPDATE orders 
-             SET queue_number = $1, status = 'pending', updated_at = CURRENT_TIMESTAMP 
-             WHERE order_id = $2`,
-            [queueNumber, payment.order_id]
-        );
-
-        await client.query('COMMIT');
-        return res.status(200).send('Payment processed successfully');
+        if (result === 'already_paid') {
+            return res.status(200).send('Already processed');
+        }
+        return res.status(200).send('Event ignored: payment record not found');
 
     } catch (error) {
         if (client) {

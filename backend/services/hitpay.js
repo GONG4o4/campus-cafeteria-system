@@ -73,6 +73,29 @@ async function createPaymentRequest(orderId, totalAmount, redirectUrl) {
     }
 }
 
+// Asks HitPay for the current status of a payment request.
+// HitPay returns status "completed" once the customer has paid.
+async function getPaymentRequest(paymentRequestId) {
+    const apiKey = process.env.HITPAY_API_KEY ? process.env.HITPAY_API_KEY.trim() : '';
+
+    if (!apiKey) {
+        throw new Error('HITPAY_API_KEY is missing in .env');
+    }
+
+    const response = await fetch(`${HITPAY_API_URL}/payment-requests/${encodeURIComponent(paymentRequestId)}`, {
+        headers: { 'X-BUSINESS-API-KEY': apiKey },
+        signal: AbortSignal.timeout(15000)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+        throw new Error(data.message || 'Unable to check payment status with HitPay.');
+    }
+
+    return data;
+}
+
 function verifyWebhookSignature(rawBody, signatureHeader, webhookSalt) {
     if (!signatureHeader || !webhookSalt) return false;
     try {
@@ -88,5 +111,6 @@ function verifyWebhookSignature(rawBody, signatureHeader, webhookSalt) {
 
 module.exports = {
     createPaymentRequest,
+    getPaymentRequest,
     verifyWebhookSignature
 };
