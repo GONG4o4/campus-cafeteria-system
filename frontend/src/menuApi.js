@@ -60,6 +60,40 @@ export async function getMenu(signal) {
   return data.map(formatMeal)
 }
 
+// Returns the menu item IDs of the current Top 10 best sellers.
+// The backend decides the ranking; the menu only matches IDs.
+export async function getBestSellerIds(signal) {
+  const response = await fetch('http://localhost:3000/api/menu/best-sellers', { signal })
+
+  let data
+
+  try {
+    data = await response.json()
+  } catch {
+    data = null
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load best sellers.')
+  }
+
+  if (!Array.isArray(data?.items)) {
+    throw new Error('The best sellers service returned an invalid list.')
+  }
+
+  const ids = []
+
+  for (const item of data.items) {
+    if (!Number.isInteger(item?.menu_item_id) || item.menu_item_id < 1) {
+      throw new Error('The best sellers service returned an invalid list.')
+    }
+
+    ids.push(item.menu_item_id)
+  }
+
+  return ids
+}
+
 export async function saveMeal(meal, id) {
   const errors = getMealErrors(meal)
 

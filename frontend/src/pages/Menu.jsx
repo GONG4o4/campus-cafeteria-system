@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import MenuCard, { MenuCardSkeleton } from '../components/menu/MenuCard'
 import Button from '../components/ui/Button'
 import { Alert, Loading } from '../components/ui/Feedback'
+import { getBestSellerIds } from '../menuApi'
 
 export default function Menu({ onAdd }) {
   const [items, setItems] = useState([])
@@ -11,6 +12,8 @@ export default function Menu({ onAdd }) {
   const [message, setMessage] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [availabilityFilter, setAvailabilityFilter] = useState('all')
+  // Empty until the backend answers, so no badge shows while loading.
+  const [bestSellerIds, setBestSellerIds] = useState([])
 
   const search = searchTerm.trim().toLowerCase()
   const filteredItems = items
@@ -100,6 +103,27 @@ export default function Menu({ onAdd }) {
       }
     }
     loadMenu()
+    return () => controller.abort()
+  }, [reload])
+
+  // Best sellers load separately from the menu. If this request fails,
+  // the menu still works and simply shows no badges.
+  useEffect(() => {
+    const controller = new AbortController()
+
+    getBestSellerIds(controller.signal)
+      .then((ids) => {
+        if (!controller.signal.aborted) {
+          setBestSellerIds(ids)
+        }
+      })
+      .catch((requestError) => {
+        if (!controller.signal.aborted) {
+          console.error('Best sellers failed to load:', requestError.message)
+          setBestSellerIds([])
+        }
+      })
+
     return () => controller.abort()
   }, [reload])
 
@@ -208,6 +232,7 @@ export default function Menu({ onAdd }) {
               key={item.menu_item_id}
               item={item}
               onAdd={handleAddItem}
+              isBestSeller={bestSellerIds.includes(item.menu_item_id)}
             />
           ))}
         </div>
