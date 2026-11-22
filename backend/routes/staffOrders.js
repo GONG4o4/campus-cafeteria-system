@@ -4,6 +4,7 @@ const {
   authenticateToken,
   requireRole,
 } = require('../middleware/authMiddleware')
+const { markOrderNoShow, getPenaltySummary } = require('../services/noShow')
 
 const router = express.Router()
 
@@ -27,6 +28,15 @@ router.get('/orders', requireRole('cafeteria_staff', 'super_admin'), async (req,
         o.status,
         o.total_amount,
         'paid' AS payment_status,
+        TO_CHAR(o.ready_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS ready_at,
+        COALESCE(
+          o.status = 'ready' AND CURRENT_TIMESTAMP >= COALESCE(o.ready_at, o.updated_at) + make_interval(mins => (
+            SELECT pickup_window_minutes + grace_period_minutes
+            FROM no_show_policy
+            WHERE policy_id = 1
+          )),
+          false
+        ) AS can_mark_no_show,
         COALESCE((
           SELECT json_agg(
             json_build_object(
@@ -123,7 +133,8 @@ router.patch('/orders/:id/status', requireRole('cafeteria_staff'), async (req, r
     const updated = await pool.query(
       `UPDATE orders
        SET status = $1,
-           updated_at = CURRENT_TIMESTAMP
+           updated_at = CURRENT_TIMESTAMP,
+           ready_at = CASE WHEN $1::varchar = 'ready' THEN CURRENT_TIMESTAMP ELSE ready_at END
        WHERE order_id = $2
          AND status = $3
        RETURNING
@@ -150,6 +161,126 @@ router.patch('/orders/:id/status', requireRole('cafeteria_staff'), async (req, r
 
     return res.status(500).json({
       message: 'Unable to update order status.',
+    })
+  }
+})
+
+function isValidId(text) {
+  const id = Number(text)
+
+  return /^[1-9]\d*$/.test(text) && Number.isSafeInteger(id) && id <= 2147483647
+}
+
+// Staff marks a ready order as not collected. Only cafeteria staff can do this.
+// The backend checks the deadline and grace period itself.
+router.post('/orders/:id/no-show', requireRole('cafeteria_staff'), async (req, res) => {
+  if (!isValidId(req.params.id)) {
+    return res.status(400).json({
+      message: 'Invalid order ID.',
+    })
+  }
+
+  // This action takes no input. Reject anything extra that was sent.
+  const body = req.body
+
+  if (
+    body !== undefined &&
+    (body === null || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length > 0)
+  ) {
+    return res.status(400).json({
+      message: 'This request does not accept a body.',
+    })
+  }
+
+  const orderId = Number(req.params.id)
+  let client
+
+  try {
+    client = await pool.connect()
+    await client.query('BEGIN')
+
+    const result = await markOrderNoShow(client, orderId, req.user.user_id)
+
+    if (result.error) {
+      await client.query('ROLLBACK')
+
+      const response = { message: result.error.message }
+
+      if (result.error.no_show_after) {
+        response.no_show_after = result.error.no_show_after
+      }
+
+      return res.status(result.error.status).json(response)
+    }
+
+    await client.query('COMMIT')
+
+    let message = 'Order marked as a no-show. A warning was recorded for the customer.'
+
+    if (result.restriction) {
+      message = 'Order marked as a no-show. The customer is temporarily restricted from ordering.'
+    }
+
+    return res.json({
+      message,
+      order: result.order,
+      no_show: result.no_show,
+      restriction: result.restriction,
+    })
+  } catch (error) {
+    if (client) {
+      try {
+        await client.query('ROLLBACK')
+      } catch (rollbackError) {
+        console.error('No-show rollback failed:', rollbackError.message)
+      }
+    }
+
+    console.error('Mark no-show failed:', error.message)
+
+    return res.status(500).json({
+      message: 'Unable to mark this order as a no-show.',
+    })
+  } finally {
+    if (client) {
+      client.release()
+    }
+  }
+})
+
+// Staff and super admins can look up one customer's no-show history.
+router.get('/customers/:id/no-shows', requireRole('cafeteria_staff', 'super_admin'), async (req, res) => {
+  if (!isValidId(req.params.id)) {
+    return res.status(400).json({
+      message: 'Invalid customer ID.',
+    })
+  }
+
+  const customerId = Number(req.params.id)
+
+  try {
+    const customer = await pool.query(
+      "SELECT user_id FROM users WHERE user_id = $1 AND role = 'student'",
+      [customerId]
+    )
+
+    if (customer.rows.length === 0) {
+      return res.status(404).json({
+        message: 'Customer not found.',
+      })
+    }
+
+    const summary = await getPenaltySummary(pool, customerId)
+
+    return res.json({
+      customer_id: customerId,
+      ...summary,
+    })
+  } catch (error) {
+    console.error('Customer no-show history failed:', error.message)
+
+    return res.status(500).json({
+      message: 'Unable to load no-show history.',
     })
   }
 })

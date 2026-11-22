@@ -17,6 +17,7 @@ let queries;
 let releases;
 let menuRows;
 let failOnItemInsert;
+let restrictions;
 
 function createToken(role = "student") {
     return jwt.sign(
@@ -37,6 +38,19 @@ function createMockClient() {
                 statement === "COMMIT" ||
                 statement === "ROLLBACK") {
                 return { rows: [] };
+            }
+
+            if (statement.includes("FROM customer_restrictions")) {
+                // Same rule as the real SQL: only active, not-yet-expired rows.
+                assert.ok(statement.includes("status = 'active'"));
+                assert.ok(statement.includes("ends_at > CURRENT_TIMESTAMP"));
+                const now = Date.now();
+                const rows = restrictions.filter(r =>
+                    r.user_id === params[0] &&
+                    r.status === "active" &&
+                    r.endsAt > now
+                );
+                return { rows: rows.map(r => ({ restriction_id: 1, reason: r.reason, ends_at: r.ends_at })) };
             }
 
             if (statement.includes("FROM menu_items")) {
@@ -133,6 +147,7 @@ beforeEach(() => {
     queries = [];
     releases = 0;
     failOnItemInsert = false;
+    restrictions = [];
 
     menuRows = [{
         menu_item_id: 2,
@@ -295,4 +310,64 @@ test("POST rolls back when order item insertion fails", async () => {
     assert.equal(wasExecuted("ROLLBACK"), true);
     assert.equal(wasExecuted("COMMIT"), false);
     assert.equal(releases, 1);
+});
+
+test("POST is blocked while the customer has an active no-show restriction", async () => {
+    restrictions = [{
+        user_id: 3,
+        status: "active",
+        endsAt: Date.now() + 24 * 60 * 60 * 1000,
+        ends_at: "2026-11-29T11:00:00",
+        reason: "3 uncollected orders within 30 days"
+    }];
+
+    const response = await request({
+        items: [{ menu_item_id: 2, quantity: 1 }]
+    });
+
+    assert.equal(response.status, 403);
+
+    const result = await response.json();
+
+    assert.equal(result.code, "ORDERING_RESTRICTED");
+    assert.equal(result.restriction.ends_at, "2026-11-29T11:00:00");
+    assert.match(result.message, /2026-11-29T11:00:00/);
+
+    assert.equal(queries.some(q => q.statement.startsWith("INSERT INTO orders")), false);
+    assert.equal(wasExecuted("ROLLBACK"), true);
+    assert.equal(wasExecuted("COMMIT"), false);
+    assert.equal(releases, 1);
+});
+
+test("POST is not blocked by an expired or lifted restriction", async () => {
+    restrictions = [
+        { user_id: 3, status: "active", endsAt: Date.now() - 60 * 1000, ends_at: "old", reason: "expired" },
+        { user_id: 3, status: "lifted", endsAt: Date.now() + 60 * 60 * 1000, ends_at: "x", reason: "lifted" }
+    ];
+    // Stop right after the order row is inserted so the payment
+    // provider is never called from tests.
+    failOnItemInsert = true;
+
+    await request({
+        items: [{ menu_item_id: 2, quantity: 1 }]
+    });
+
+    assert.equal(queries.some(q => q.statement.startsWith("INSERT INTO orders")), true);
+});
+
+test("POST is not blocked by another customer's restriction", async () => {
+    restrictions = [{
+        user_id: 99,
+        status: "active",
+        endsAt: Date.now() + 60 * 60 * 1000,
+        ends_at: "2026-11-29T11:00:00",
+        reason: "someone else"
+    }];
+    failOnItemInsert = true;
+
+    await request({
+        items: [{ menu_item_id: 2, quantity: 1 }]
+    });
+
+    assert.equal(queries.some(q => q.statement.startsWith("INSERT INTO orders")), true);
 });

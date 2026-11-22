@@ -2,6 +2,7 @@ const express = require("express");
 const pool = require("../db");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
 const { createPaymentRequest } = require("../services/hitpay");
+const { findActiveRestriction, getPenaltySummary } = require("../services/noShow");
 
 const router = express.Router();
 
@@ -43,6 +44,20 @@ router.get("/", authenticateToken, requireRole("student"), async (req, res) => {
         console.error("Order history failed:", error.message);
         return res.status(500).json({
             message: "Unable to load your orders. Please try again."
+        });
+    }
+});
+
+// The logged-in student's own no-show history and restriction status.
+// Must stay above "/:id" so "penalty-status" is not read as an order ID.
+router.get("/penalty-status", authenticateToken, requireRole("student"), async (req, res) => {
+    try {
+        const summary = await getPenaltySummary(pool, req.user.user_id);
+        return res.json(summary);
+    } catch (error) {
+        console.error("Penalty status failed:", error.message);
+        return res.status(500).json({
+            message: "Unable to load your account status. Please try again."
         });
     }
 });
@@ -108,6 +123,19 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
             try {
                 client = await pool.connect();
                 await client.query("BEGIN");
+
+                // Customers with an active no-show restriction cannot order.
+                const restriction = await findActiveRestriction(client, req.user.user_id);
+
+                if (restriction) {
+                    await client.query("ROLLBACK");
+                    return res.status(403).json({
+                        message: `Your account cannot place orders until ${restriction.ends_at} because of uncollected orders.`,
+                        code: "ORDERING_RESTRICTED",
+                        restriction: restriction
+                    });
+                }
+
                 const ids = items.map(item => item.menu_item_id);
                 const menuResult = await client.query(
                     `SELECT menu_item_id, price, is_available, name
