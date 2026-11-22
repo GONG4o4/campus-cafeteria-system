@@ -1,9 +1,12 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Button from '../components/ui/Button'
 import { Alert } from '../components/ui/Feedback'
 import { formatMoney } from '../utils/orders'
 import { getSubtotal } from '../utils/cart'
 import { createCheckoutSession } from '../checkoutApi'
+import { getNoShowPolicy } from '../noShowPolicyApi'
+import { canPlaceOrder } from '../utils/noShowPolicy'
+import NoShowNotice from '../components/checkout/NoShowNotice'
 
 export default function Checkout({
   cart,
@@ -15,9 +18,40 @@ export default function Checkout({
   const [error, setError] = useState('')
   const [orderStatusUnknown, setOrderStatusUnknown] = useState(false)
   const submitting = useRef(false)
+  const [acknowledged, setAcknowledged] = useState(false)
+  const [policy, setPolicy] = useState(null)
+  const [policyLoading, setPolicyLoading] = useState(true)
+
+  // Load the real policy numbers so the warning matches the backend rules.
+  // If it fails, the notice shows general wording instead.
+  useEffect(() => {
+    const controller = new AbortController()
+
+    getNoShowPolicy(controller.signal)
+      .then((data) => setPolicy(data))
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          setPolicy(null)
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setPolicyLoading(false)
+        }
+      })
+
+    return () => controller.abort()
+  }, [])
+
+  const orderAllowed = canPlaceOrder({
+    acknowledged,
+    loading,
+    orderStatusUnknown,
+    itemCount: checkoutItems.length,
+  })
 
   async function handlePlaceOrder() {
-    if (submitting.current || checkoutItems.length === 0 || orderStatusUnknown) {
+    if (submitting.current || !orderAllowed) {
       return
     }
 
@@ -26,7 +60,7 @@ export default function Checkout({
     setError('')
 
     try {
-      const result = await createCheckoutSession(checkoutItems)
+      const result = await createCheckoutSession(checkoutItems, acknowledged)
       window.location.href = result.checkout_url
     } catch (requestError) {
       setError(requestError.message || 'Unable to place your order.')
@@ -63,7 +97,7 @@ export default function Checkout({
 
               return (
                 <li key={selection.menu_item_id}>
-                  <span>{selection.quantity} Ã— {item.name}</span>
+                  <span>{selection.quantity} × {item.name}</span>
                   <strong>{formatMoney(getSubtotal(item))}</strong>
                 </li>
               )
@@ -83,10 +117,18 @@ export default function Checkout({
             Your final total and queue number will be confirmed after the payment is verified.
           </p>
 
+          <NoShowNotice
+            policy={policy}
+            loading={policyLoading}
+            acknowledged={acknowledged}
+            onAcknowledge={setAcknowledged}
+            disabled={loading}
+          />
+
           <div className="checkout-actions">
             <Button
               onClick={handlePlaceOrder}
-              disabled={loading || orderStatusUnknown}
+              disabled={!orderAllowed}
             >
               {loading ? 'Redirecting to payment...' : 'Continue to payment'}
             </Button>

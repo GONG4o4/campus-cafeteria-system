@@ -1,4 +1,8 @@
-export async function createCheckoutSession(items) {
+export async function createCheckoutSession(items, acknowledgedNoShowPolicy) {
+  if (acknowledgedNoShowPolicy !== true) {
+    throw new Error('Please confirm the pickup and no-show policy before placing your order.')
+  }
+
   const token = localStorage.getItem('token')
 
   if (!token) {
@@ -19,6 +23,7 @@ export async function createCheckoutSession(items) {
           menu_item_id: item.menu_item_id,
           quantity: item.quantity,
         })),
+        acknowledge_no_show_policy: true,
       }),
     })
   } catch (cause) {

@@ -2,7 +2,7 @@ const express = require("express");
 const pool = require("../db");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
 const { createPaymentRequest } = require("../services/hitpay");
-const { findActiveRestriction, getPenaltySummary } = require("../services/noShow");
+const { findActiveRestriction, getPenaltySummary, getPolicy } = require("../services/noShow");
 
 const router = express.Router();
 
@@ -44,6 +44,20 @@ router.get("/", authenticateToken, requireRole("student"), async (req, res) => {
         console.error("Order history failed:", error.message);
         return res.status(500).json({
             message: "Unable to load your orders. Please try again."
+        });
+    }
+});
+
+// The no-show policy shown at checkout. The numbers come from the
+// database so the checkout warning always matches what the backend enforces.
+router.get("/no-show-policy", authenticateToken, requireRole("student"), async (req, res) => {
+    try {
+        const policy = await getPolicy(pool);
+        return res.json(policy);
+    } catch (error) {
+        console.error("No-show policy failed:", error.message);
+        return res.status(500).json({
+            message: "Unable to load the pickup policy. Please try again."
         });
     }
 });
@@ -103,6 +117,15 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
     if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
         return res.status(400).json({
             message: "Invalid or empty cart"
+            });
+        }
+
+        // The customer must tick the no-show policy checkbox at checkout.
+        // Checked here too, so calling the API directly cannot skip it.
+        if (req.body?.acknowledge_no_show_policy !== true) {
+            return res.status(400).json({
+                message: "Please confirm that you have read the pickup and no-show policy before placing your order.",
+                code: "NO_SHOW_POLICY_NOT_ACKNOWLEDGED"
             });
         }
 
@@ -187,11 +210,16 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
 
                 const orderDate = dateResult.rows[0].order_date;
 
+                // Save which policy version the customer accepted.
+                // The time is the server's time, not the browser's.
+                const policy = await getPolicy(client);
+
                 const orderResult = await client.query(
-                    `INSERT INTO orders (user_id, total_amount, order_date) VALUES ($1, $2, $3)
+                    `INSERT INTO orders (user_id, total_amount, order_date, no_show_ack_at, no_show_policy_version)
+                    VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
                     RETURNING order_id, status, total_amount, order_date`,
                     [
-                        req.user.user_id, toAmount(totalCents), orderDate
+                        req.user.user_id, toAmount(totalCents), orderDate, policy.policy_version
                     ]
                 );
 

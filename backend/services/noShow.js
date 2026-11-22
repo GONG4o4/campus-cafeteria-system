@@ -7,7 +7,7 @@ const TIME_FORMAT = `'YYYY-MM-DD"T"HH24:MI:SS'`;
 async function getPolicy(db) {
     const result = await db.query(
         `SELECT pickup_window_minutes, grace_period_minutes, offense_threshold,
-                offense_window_days, restriction_days
+                offense_window_days, restriction_days, policy_version
          FROM no_show_policy
          WHERE policy_id = 1`
     );

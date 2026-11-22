@@ -141,6 +141,39 @@ A restricted customer gets:
 }
 ```
 
+## Checkout acknowledgment (issue #75)
+
+Run `database/migrations/004_no_show_acknowledgment.sql` after 003.
+
+- Checkout shows a **Pickup and no-show policy** notice above the payment
+  button. Its numbers come from `GET /api/orders/no-show-policy`, so the text
+  always matches the policy above. If that request fails, general wording
+  without numbers is shown.
+- The customer must tick the checkbox before **Continue to payment** is enabled.
+- `POST /api/orders` must include `"acknowledge_no_show_policy": true`.
+  Otherwise it returns `400` with `code: "NO_SHOW_POLICY_NOT_ACKNOWLEDGED"`,
+  so calling the API directly cannot skip the acknowledgment.
+- The backend saves `orders.no_show_ack_at` (server time, never a browser
+  value) and `orders.no_show_policy_version`.
+- **When you change the policy, also increase `policy_version`:**
+
+```sql
+UPDATE no_show_policy
+SET restriction_days = 3,
+    policy_version = policy_version + 1,
+    updated_at = CURRENT_TIMESTAMP
+WHERE policy_id = 1;
+```
+
+### `GET /api/orders/no-show-policy`, `student`
+
+```json
+{
+  "pickup_window_minutes": 30, "grace_period_minutes": 15, "offense_threshold": 3,
+  "offense_window_days": 30, "restriction_days": 7, "policy_version": 1
+}
+```
+
 ## Security notes
 
 - Only `cafeteria_staff` can record a no-show. Customers cannot mark orders.
