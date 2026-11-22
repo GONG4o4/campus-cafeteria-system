@@ -2,6 +2,7 @@
 const express = require("express");
 const pool = require("../db");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
+const { getBestSellers, BEST_SELLER_DAYS } = require("../services/bestSellers");
 
 const router = express.Router();
 
@@ -62,6 +63,29 @@ router.get("/", async (req, res) => {
     }
 });
 
+
+// Top 10 best sellers for the customer menu's Best Seller badge.
+// Public like GET /, and read-only.
+// Must stay above "/:id" so "best-sellers" is not read as a menu item ID.
+router.get("/best-sellers", async (req, res) => {
+    try {
+        const items = await getBestSellers(pool);
+
+        return res.status(200).json({
+            items,
+            period: {
+                type: "rolling_days",
+                days: BEST_SELLER_DAYS
+            }
+        });
+    } catch (error) {
+        console.error("Failed to load best sellers:", error.message);
+
+        return res.status(500).json({
+            message: "Failed to load best sellers"
+        });
+    }
+});
 
 router.get("/:id", async (req, res) => {
     const id = parseMenuId(req.params.id);
