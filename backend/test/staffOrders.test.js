@@ -72,19 +72,20 @@ beforeEach(() => {
       return { rows: [structuredClone(storedOrder)] }
     }
 
-    if (/SELECT status FROM orders/i.test(sql)) {
+    if (/SELECT o\.status, p\.status AS payment_status/i.test(sql)) {
       if (params[0] !== storedOrder.order_id) {
         return { rows: [] }
       }
 
       return {
-        rows: [{ status: storedOrder.status }],
+        rows: [{ status: storedOrder.status, payment_status: 'paid' }],
       }
     }
 
     if (/UPDATE orders/i.test(sql)) {
       assert.match(sql, /WHERE order_id = \$2/)
       assert.match(sql, /AND status = \$3/)
+      assert.match(sql, /ready_at = CASE WHEN \$1::varchar = 'ready'/)
 
       const [newStatus, orderId, expectedStatus] = params
 
