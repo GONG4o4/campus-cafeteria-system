@@ -29,14 +29,23 @@ router.get('/orders', requireRole('cafeteria_staff', 'super_admin'), async (req,
         o.total_amount,
         'paid' AS payment_status,
         TO_CHAR(o.ready_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS ready_at,
+        CASE WHEN o.status = 'ready' THEN
+          TO_CHAR(COALESCE(o.ready_at, o.updated_at) + make_interval(mins => policy.pickup_window_minutes), 'YYYY-MM-DD"T"HH24:MI:SS')
+        END AS pickup_deadline,
+        CASE WHEN o.status = 'ready' THEN
+          TO_CHAR(COALESCE(o.ready_at, o.updated_at) + make_interval(mins => policy.pickup_window_minutes + policy.grace_period_minutes), 'YYYY-MM-DD"T"HH24:MI:SS')
+        END AS no_show_after,
         COALESCE(
-          o.status = 'ready' AND CURRENT_TIMESTAMP >= COALESCE(o.ready_at, o.updated_at) + make_interval(mins => (
-            SELECT pickup_window_minutes + grace_period_minutes
-            FROM no_show_policy
-            WHERE policy_id = 1
-          )),
+          o.status = 'ready' AND CURRENT_TIMESTAMP >= COALESCE(o.ready_at, o.updated_at) + make_interval(mins => policy.pickup_window_minutes + policy.grace_period_minutes),
           false
         ) AS can_mark_no_show,
+        -- No-show outcome, only for orders marked no-show. No customer
+        -- names or contact details are sent, only the penalty result.
+        TO_CHAR(ns.recorded_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS no_show_recorded_at,
+        ns.offense_count AS no_show_offense_count,
+        policy.offense_threshold AS no_show_offense_threshold,
+        ns.policy_result AS no_show_policy_result,
+        TO_CHAR(cr.ends_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS restriction_ends_at,
         COALESCE((
           SELECT json_agg(
             json_build_object(
@@ -54,6 +63,9 @@ router.get('/orders', requireRole('cafeteria_staff', 'super_admin'), async (req,
           WHERE oi.order_id = o.order_id
         ), '[]'::json) AS items
       FROM orders o
+      LEFT JOIN no_show_policy policy ON policy.policy_id = 1
+      LEFT JOIN no_show_records ns ON ns.order_id = o.order_id
+      LEFT JOIN customer_restrictions cr ON cr.no_show_id = ns.no_show_id
       WHERE EXISTS (
         SELECT 1 FROM payments p 
         WHERE p.order_id = o.order_id AND p.status = 'paid'
