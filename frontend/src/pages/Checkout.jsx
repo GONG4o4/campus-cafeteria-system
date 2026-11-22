@@ -7,6 +7,7 @@ import { createCheckoutSession } from '../checkoutApi'
 import { getNoShowPolicy } from '../noShowPolicyApi'
 import { canPlaceOrder } from '../utils/noShowPolicy'
 import NoShowNotice from '../components/checkout/NoShowNotice'
+import PickupReminder from '../components/checkout/PickupReminder'
 
 export default function Checkout({
   cart,
@@ -116,6 +117,8 @@ export default function Checkout({
             You will be redirected to HitPay to complete your payment securely. 
             Your final total and queue number will be confirmed after the payment is verified.
           </p>
+
+          <PickupReminder />
 
           <NoShowNotice
             policy={policy}

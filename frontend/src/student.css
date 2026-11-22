@@ -638,3 +638,60 @@
     padding: 14px;
   }
 }
+
+/* Pickup and queue reminder (checkout + confirmation) */
+.pickup-reminder {
+  margin: 0 0 16px;
+  padding: 16px 20px;
+  border: 1px solid #e9dcc3;
+  border-radius: 12px;
+  background: #fffcf5;
+  text-align: left;
+}
+
+.pickup-reminder h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.pickup-reminder dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+}
+
+.pickup-reminder dt {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2e1a1c;
+}
+
+.pickup-reminder dd {
+  margin: 2px 0 0;
+  color: #4a3f3b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pickup-reminder ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #4a3f3b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pickup-reminder--compact {
+  margin: 20px 0;
+}
+
+@media (max-width: 600px) {
+  .pickup-reminder {
+    padding: 14px;
+  }
+
+  .pickup-reminder dl {
+    grid-template-columns: 1fr;
+  }
+}

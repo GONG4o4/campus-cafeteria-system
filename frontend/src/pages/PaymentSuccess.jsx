@@ -3,6 +3,7 @@ import Button from '../components/ui/Button'
 import { Alert, Loading } from '../components/ui/Feedback'
 import { getOrders } from '../ordersApi'
 import { formatMoney } from '../utils/orders'
+import PickupReminder from '../components/checkout/PickupReminder'
 
 export default function PaymentSuccess({ onNavigate }) {
   const queryParams = new URLSearchParams(window.location.search)
@@ -110,6 +111,8 @@ export default function PaymentSuccess({ onNavigate }) {
           </div>
 
           <p>Total Paid: <strong>{formatMoney(order.total)}</strong></p>
+
+          <PickupReminder compact queueNumber={order.queueNumber} />
 
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '24px' }}>
             <Button onClick={() => onNavigate('orders')}>View Order</Button>
