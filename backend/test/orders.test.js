@@ -5,6 +5,20 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 
 const pool = require("../db");
+
+// Replace the HitPay call before the orders route loads it,
+// so tests never contact the real payment provider.
+const hitpay = require("../services/hitpay");
+let paymentRequests = [];
+hitpay.createPaymentRequest = async (orderId, totalAmount) => {
+    paymentRequests.push({ orderId, totalAmount });
+    return {
+        paymentRequestId: "pr_test_" + orderId,
+        referenceNumber: "REF-" + orderId,
+        checkoutUrl: "https://sandbox.example/checkout/" + orderId
+    };
+};
+
 const orders = require("../routes/orders");
 
 const testSecret = "orders-api-tests-only-secret";
@@ -53,6 +67,23 @@ function createMockClient() {
                 return { rows: rows.map(r => ({ restriction_id: 1, reason: r.reason, ends_at: r.ends_at })) };
             }
 
+            if (statement.includes("FROM no_show_policy")) {
+                return {
+                    rows: [{
+                        pickup_window_minutes: 30,
+                        grace_period_minutes: 15,
+                        offense_threshold: 3,
+                        offense_window_days: 30,
+                        restriction_days: 7,
+                        policy_version: 2
+                    }]
+                };
+            }
+
+            if (statement.startsWith("INSERT INTO payments")) {
+                return { rows: [], rowCount: 1 };
+            }
+
             if (statement.includes("FROM menu_items")) {
                 return { rows: menuRows };
             }
@@ -77,10 +108,9 @@ function createMockClient() {
                 return {
                     rows: [{
                         order_id: 1,
-                        queue_number: params[1],
                         status: "pending",
-                        total_amount: params[2],
-                        order_date: params[3]
+                        total_amount: params[1],
+                        order_date: params[2]
                     }]
                 };
             }
@@ -105,7 +135,16 @@ function createMockClient() {
     };
 }
 
+// Adds the checkout acknowledgment unless the test says not to.
+function withAck(body) {
+    if (body && typeof body === "object" && !("acknowledge_no_show_policy" in body)) {
+        return { ...body, acknowledge_no_show_policy: true };
+    }
+    return body;
+}
+
 async function request(body, role = "student") {
+    body = withAck(body);
     const headers = {
         "Content-Type": "application/json"
     };
@@ -148,6 +187,7 @@ beforeEach(() => {
     releases = 0;
     failOnItemInsert = false;
     restrictions = [];
+    paymentRequests = [];
 
     menuRows = [{
         menu_item_id: 2,
@@ -235,9 +275,12 @@ test("POST creates order using trusted prices and student identity", async () =>
     const result = await response.json();
 
     assert.equal(result.order_id, 1);
-    assert.equal(result.queue_number, 1);
-    assert.equal(result.status, "pending");
     assert.equal(result.total_amount, "150.00");
+    assert.equal(result.checkout_url, "https://sandbox.example/checkout/1");
+
+    // The queue number is given later, by the payment webhook.
+    assert.equal(result.queue_number, undefined);
+    assert.deepEqual(paymentRequests, [{ orderId: 1, totalAmount: "150.00" }]);
 
     const orderInsert = queries.find(query =>
         query.statement.startsWith("INSERT INTO orders")
@@ -247,9 +290,12 @@ test("POST creates order using trusted prices and student identity", async () =>
         query.statement.startsWith("INSERT INTO order_items")
     );
 
+    // user from the JWT, trusted total, server date, policy version 2.
+    // The acknowledgment time is CURRENT_TIMESTAMP in the SQL, not a param.
     assert.deepEqual(orderInsert.params, [
-        3, 1, "150.00", "2026-10-24"
+        3, "150.00", "2026-10-24", 2
     ]);
+    assert.ok(orderInsert.statement.includes("CURRENT_TIMESTAMP"));
 
     assert.deepEqual(itemInsert.params, [
         1, 2, 2, "75.00", "150.00"
@@ -370,4 +416,43 @@ test("POST is not blocked by another customer's restriction", async () => {
     });
 
     assert.equal(queries.some(q => q.statement.startsWith("INSERT INTO orders")), true);
+});
+
+test("POST without the no-show acknowledgment returns 400", async () => {
+    for (const ack of [undefined, false, "true", 1, null]) {
+        const body = { items: [{ menu_item_id: 2, quantity: 1 }] };
+
+        if (ack !== undefined) {
+            body.acknowledge_no_show_policy = ack;
+        } else {
+            body.acknowledge_no_show_policy = undefined;
+        }
+
+        const response = await request(body);
+        const result = await response.json();
+
+        assert.equal(response.status, 400);
+        assert.equal(result.code, "NO_SHOW_POLICY_NOT_ACKNOWLEDGED");
+    }
+
+    assert.equal(queries.length, 0);
+    assert.equal(paymentRequests.length, 0);
+});
+
+test("POST ignores a client-supplied acknowledgment time", async () => {
+    const response = await request({
+        acknowledge_no_show_policy: true,
+        no_show_ack_at: "2000-01-01T00:00:00",
+        no_show_policy_version: 99,
+        items: [{ menu_item_id: 2, quantity: 1 }]
+    });
+
+    assert.equal(response.status, 201);
+
+    const orderInsert = queries.find(query =>
+        query.statement.startsWith("INSERT INTO orders")
+    );
+
+    assert.equal(orderInsert.params.includes("2000-01-01T00:00:00"), false);
+    assert.equal(orderInsert.params[3], 2);
 });

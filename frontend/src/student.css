@@ -583,3 +583,115 @@
   outline: 2px solid #638510;
   outline-offset: 2px;
 }
+/* No-show policy notice at checkout */
+.no-show-notice {
+  margin: 0 0 20px;
+  padding: 16px 20px;
+  border: 1px solid #e9dcc3;
+  border-left: 4px solid #ac080c;
+  border-radius: 12px;
+  background: #fffaf0;
+}
+
+.no-show-notice h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.no-show-notice ul {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  color: #4a3f3b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.no-show-notice__loading {
+  color: #6f5f5a;
+  font-size: 14px;
+}
+
+.no-show-notice__check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f6ecd8;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.no-show-notice__check input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: #ac080c;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .no-show-notice {
+    padding: 14px;
+  }
+}
+
+/* Pickup and queue reminder (checkout + confirmation) */
+.pickup-reminder {
+  margin: 0 0 16px;
+  padding: 16px 20px;
+  border: 1px solid #e9dcc3;
+  border-radius: 12px;
+  background: #fffcf5;
+  text-align: left;
+}
+
+.pickup-reminder h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.pickup-reminder dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+  margin: 0;
+}
+
+.pickup-reminder dt {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2e1a1c;
+}
+
+.pickup-reminder dd {
+  margin: 2px 0 0;
+  color: #4a3f3b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pickup-reminder ul {
+  margin: 0;
+  padding-left: 20px;
+  color: #4a3f3b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.pickup-reminder--compact {
+  margin: 20px 0;
+}
+
+@media (max-width: 600px) {
+  .pickup-reminder {
+    padding: 14px;
+  }
+
+  .pickup-reminder dl {
+    grid-template-columns: 1fr;
+  }
+}

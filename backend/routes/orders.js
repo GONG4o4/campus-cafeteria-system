@@ -1,8 +1,9 @@
 const express = require("express");
 const pool = require("../db");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
-const { createPaymentRequest } = require("../services/hitpay");
-const { findActiveRestriction, getPenaltySummary } = require("../services/noShow");
+const { createPaymentRequest, getPaymentRequest } = require("../services/hitpay");
+const { confirmPayment } = require("../services/paymentConfirm");
+const { findActiveRestriction, getPenaltySummary, getPolicy } = require("../services/noShow");
 
 const router = express.Router();
 
@@ -48,6 +49,20 @@ router.get("/", authenticateToken, requireRole("student"), async (req, res) => {
     }
 });
 
+// The no-show policy shown at checkout. The numbers come from the
+// database so the checkout warning always matches what the backend enforces.
+router.get("/no-show-policy", authenticateToken, requireRole("student"), async (req, res) => {
+    try {
+        const policy = await getPolicy(pool);
+        return res.json(policy);
+    } catch (error) {
+        console.error("No-show policy failed:", error.message);
+        return res.status(500).json({
+            message: "Unable to load the pickup policy. Please try again."
+        });
+    }
+});
+
 // The logged-in student's own no-show history and restriction status.
 // Must stay above "/:id" so "penalty-status" is not read as an order ID.
 router.get("/penalty-status", authenticateToken, requireRole("student"), async (req, res) => {
@@ -88,6 +103,81 @@ router.get("/:id", authenticateToken, requireRole("student"), async (req, res) =
     }
 });
 
+// Called by the payment success page. Asks HitPay directly if the order
+// was paid, and if so assigns the queue number. This works even when HitPay
+// cannot reach our webhook (for example when the backend runs on localhost).
+router.post("/:id/verify-payment", authenticateToken, requireRole("student"), async (req, res) => {
+    const id = Number(req.params.id);
+
+    if (!/^[1-9]\d*$/.test(req.params.id) || !Number.isSafeInteger(id) || id > 2147483647) {
+        return res.status(400).json({ message: "Invalid order ID" });
+    }
+
+    let client;
+    try {
+        // Only look at the student's own order.
+        const paymentResult = await pool.query(
+            `SELECT p.checkout_session_id, p.status
+             FROM payments p
+             JOIN orders o ON o.order_id = p.order_id
+             WHERE o.order_id = $1 AND o.user_id = $2
+             ORDER BY p.payment_id DESC
+             LIMIT 1`,
+            [id, req.user.user_id]
+        );
+
+        if (paymentResult.rows.length === 0) {
+            return res.status(404).json({ message: "Payment not found for this order" });
+        }
+
+        const payment = paymentResult.rows[0];
+
+        // Already paid or cancelled, nothing to check with HitPay.
+        if (payment.status !== "pending") {
+            return res.json({ payment_status: payment.status });
+        }
+
+        const hitpayPayment = await getPaymentRequest(payment.checkout_session_id);
+
+        if (hitpayPayment.status !== "completed") {
+            return res.json({ payment_status: "pending" });
+        }
+
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        const result = await confirmPayment(
+            client,
+            payment.checkout_session_id,
+            hitpayPayment.amount,
+            `verify_${payment.checkout_session_id}_${Date.now()}`
+        );
+
+        if (result === "paid") {
+            await client.query("COMMIT");
+            return res.json({ payment_status: "paid" });
+        }
+
+        await client.query("ROLLBACK");
+
+        if (result === "already_paid") {
+            return res.json({ payment_status: "paid" });
+        }
+
+        return res.status(400).json({ message: "Payment could not be confirmed" });
+    } catch (error) {
+        if (client) {
+            await client.query("ROLLBACK");
+        }
+        console.error("Payment verify failed:", error.message);
+        return res.status(500).json({ message: "Unable to check payment status. Please try again." });
+    } finally {
+        if (client) {
+            client.release();
+        }
+    }
+});
+
 const toCents = (price) => {
      const [whole, fraction = ""] = String(price).split(".");
      return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
@@ -103,6 +193,15 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
     if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
         return res.status(400).json({
             message: "Invalid or empty cart"
+            });
+        }
+
+        // The customer must tick the no-show policy checkbox at checkout.
+        // Checked here too, so calling the API directly cannot skip it.
+        if (req.body?.acknowledge_no_show_policy !== true) {
+            return res.status(400).json({
+                message: "Please confirm that you have read the pickup and no-show policy before placing your order.",
+                code: "NO_SHOW_POLICY_NOT_ACKNOWLEDGED"
             });
         }
 
@@ -187,11 +286,16 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
 
                 const orderDate = dateResult.rows[0].order_date;
 
+                // Save which policy version the customer accepted.
+                // The time is the server's time, not the browser's.
+                const policy = await getPolicy(client);
+
                 const orderResult = await client.query(
-                    `INSERT INTO orders (user_id, total_amount, order_date) VALUES ($1, $2, $3)
+                    `INSERT INTO orders (user_id, total_amount, order_date, no_show_ack_at, no_show_policy_version)
+                    VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
                     RETURNING order_id, status, total_amount, order_date`,
                     [
-                        req.user.user_id, toAmount(totalCents), orderDate
+                        req.user.user_id, toAmount(totalCents), orderDate, policy.policy_version
                     ]
                 );
 

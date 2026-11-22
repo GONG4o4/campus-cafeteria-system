@@ -27,6 +27,10 @@ export const orderStatuses = {
     message: 'Your order has been picked up.',
   },
   cancelled: { label: 'Cancelled', message: 'This order was cancelled.' },
+  no_show: {
+    label: 'Not collected',
+    message: 'This order was not collected and was recorded as a no-show.',
+  },
 }
 
 export function filterOrders(orders, filter) {
