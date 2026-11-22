@@ -135,9 +135,11 @@ async function addPaidOrder(h, status, readyMinutesAgo = null) {
   )
 
   await h.client.query(
-    `INSERT INTO payments (order_id, checkout_session_id, amount, status)
-     VALUES ($1, $2, 75, 'paid')`,
-    [orderId, `test-${orderId}`]
+    // Same columns the real checkout fills in. Some databases have an older
+    // payments table where reference_number is required, so always set it.
+    `INSERT INTO payments (order_id, checkout_session_id, reference_number, amount, status)
+     VALUES ($1, $2, $3, 75, 'paid')`,
+    [orderId, `test-${orderId}`, `TEST-REF-${orderId}`]
   )
 
   return orderId
