@@ -201,7 +201,7 @@ export default function StaffOrderQueue() {
                   <p>Order #{order.order_id}</p>
                   <p>
                     {order.order_date}
-                    {order.ordered_at && ` Â· ${order.ordered_at.slice(11, 16)}`}
+                    {order.ordered_at && ` · ${order.ordered_at.slice(11, 16)}`}
                   </p>
                 </div>
 
