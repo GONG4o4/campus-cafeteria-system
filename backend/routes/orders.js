@@ -7,6 +7,12 @@ const { findActiveRestriction, getPenaltySummary, getPolicy } = require("../serv
 
 const router = express.Router();
 
+// Anti-spam limit: how many unpaid orders a customer can have at once.
+// Only orders placed in the last UNPAID_WINDOW_MINUTES count, so an old
+// abandoned checkout does not block the customer forever.
+const MAX_UNPAID_ORDERS = 2;
+const UNPAID_WINDOW_MINUTES = 60;
+
 const orderSelect = `
     SELECT o.order_id, o.queue_number, o.status, o.total_amount, o.order_date,
            TO_CHAR(o.ordered_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ordered_at,
@@ -232,6 +238,35 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
                         message: `Your account cannot place orders until ${restriction.ends_at} because of uncollected orders.`,
                         code: "ORDERING_RESTRICTED",
                         restriction: restriction
+                    });
+                }
+
+                // Anti-spam: a customer can only have a few unpaid orders at
+                // a time. Locking the user's row first makes two quick clicks
+                // wait for each other, so both cannot slip past the count.
+                await client.query(
+                    "SELECT user_id FROM users WHERE user_id = $1 FOR UPDATE",
+                    [req.user.user_id]
+                );
+
+                const unpaidResult = await client.query(
+                    `SELECT COUNT(*)::int AS count
+                     FROM orders o
+                     WHERE o.user_id = $1
+                       AND o.status = 'pending'
+                       AND o.ordered_at >= CURRENT_TIMESTAMP - make_interval(mins => $2)
+                       AND NOT EXISTS (
+                           SELECT 1 FROM payments p
+                           WHERE p.order_id = o.order_id AND p.status = 'paid'
+                       )`,
+                    [req.user.user_id, UNPAID_WINDOW_MINUTES]
+                );
+
+                if (unpaidResult.rows[0].count >= MAX_UNPAID_ORDERS) {
+                    await client.query("ROLLBACK");
+                    return res.status(429).json({
+                        message: `You already have ${MAX_UNPAID_ORDERS} unpaid orders. Please pay for or cancel one in your Order history before placing a new order.`,
+                        code: "TOO_MANY_UNPAID_ORDERS"
                     });
                 }
 

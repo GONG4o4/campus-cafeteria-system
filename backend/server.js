@@ -6,6 +6,7 @@ process.on('uncaughtException', (err) => {
 });
 
 const express = require("express");
+const path = require("path");
 const cors = require("cors");
 const pool = require("./db");
 require("dotenv").config();
@@ -35,6 +36,9 @@ app.use(cors({
 app.use("/api/payments", express.raw({ type: "application/json" }), payments);
 
 app.use(express.json());
+
+// Meal photos uploaded by staff (see POST /api/menu/upload-image).
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.use("/api/auth", auth);
 app.use("/api/auth", authTest);

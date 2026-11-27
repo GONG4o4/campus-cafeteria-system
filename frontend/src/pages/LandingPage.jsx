@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import MealImage from '../components/menu/MealImage'
+import PenaltyNotice from '../components/PenaltyNotice'
 import { formatMoney } from '../utils/orders'
 import './LandingPage.css'
 
@@ -264,6 +265,12 @@ export default function LandingPage({ onNavigate, user = null, itemCount = 0 }) 
       </header>
 
       <main id="landing-main">
+        {loggedIn && !isStaff && (
+          <div className="landing-container landing-penalty">
+            <PenaltyNotice />
+          </div>
+        )}
+
         <section className="landing-hero" aria-labelledby="landing-title">
           <div className="landing-container landing-hero-content">
             <div>

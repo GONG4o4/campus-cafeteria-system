@@ -175,6 +175,69 @@
   accent-color: #a51c30;
 }
 
+/* Category dropdown */
+.meal-form-field select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e9dcc3;
+  border-radius: 12px;
+  background: #fffcf5;
+  color: #2e1a1c;
+  font: inherit;
+  font-size: 14px;
+}
+
+.meal-form-field select:focus-visible {
+  outline: 2px solid #a51c30;
+  outline-offset: 2px;
+}
+
+/* Photo upload button */
+.meal-form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.meal-photo-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.meal-form-field .meal-photo-button {
+  display: inline-flex;
+  margin: 0;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+.meal-photo-button:focus-within {
+  outline: 2px solid #a51c30;
+  outline-offset: 2px;
+}
+
+/* The real file input is hidden; the label above acts as its button */
+.meal-form-field .meal-photo-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.meal-category {
+  display: block;
+  margin-top: 4px;
+  color: #8a7a74;
+  font-size: 12px;
+  font-weight: normal;
+}
+
 @media (max-width: 760px) {
   .meal-form-panel {
     padding: 20px;

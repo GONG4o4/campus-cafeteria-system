@@ -2,7 +2,8 @@ import { useState } from 'react'
 import Button from '../ui/Button'
 import { Alert } from '../ui/Feedback'
 import MealImage from './MealImage'
-import { getMealErrors, isValidImageUrl } from '../../utils/menu'
+import { categories, getMealErrors, isValidImageUrl } from '../../utils/menu'
+import { uploadMealPhoto } from '../../menuApi'
 
 export default function MealForm({ meal, onSave, onCancel, saving, error, blocked }) {
   const [name, setName] = useState(meal?.name || '')
@@ -10,6 +11,9 @@ export default function MealForm({ meal, onSave, onCancel, saving, error, blocke
   const [price, setPrice] = useState(meal ? String(meal.price) : '')
   const [available, setAvailable] = useState(meal?.available ?? true)
   const [imageUrl, setImageUrl] = useState(meal?.imageUrl || '')
+  const [category, setCategory] = useState(meal?.category || 'rice_meals')
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
   const [errors, setErrors] = useState({})
 
   // Only preview links that look valid, so we don't request half-typed URLs.
@@ -19,14 +23,37 @@ export default function MealForm({ meal, onSave, onCancel, saving, error, blocke
     previewUrl = imageUrl.trim()
   }
 
-  function handleSubmit(event) {
-    event.preventDefault()
+  async function handlePhotoChange(event) {
+    const file = event.target.files[0]
 
-    if (saving || blocked) {
+    // Clear the input so choosing the same file again still works.
+    event.target.value = ''
+
+    if (!file) {
       return
     }
 
-    const values = { name, description, price, available, imageUrl }
+    setUploadError('')
+    setUploading(true)
+
+    try {
+      const link = await uploadMealPhoto(file)
+      setImageUrl(link)
+    } catch (requestError) {
+      setUploadError(requestError.message)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault()
+
+    if (saving || blocked || uploading) {
+      return
+    }
+
+    const values = { name, description, price, available, imageUrl, category }
     const validationErrors = getMealErrors(values)
     setErrors(validationErrors)
 
@@ -87,7 +114,38 @@ export default function MealForm({ meal, onSave, onCancel, saving, error, blocke
           </div>
 
           <div className="meal-form-field">
-            <label htmlFor="meal-image-url">Image URL (optional)</label>
+            <label htmlFor="meal-category">Category</label>
+            <select
+              id="meal-category"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+            >
+              {categories.map((item) => (
+                <option key={item.value} value={item.value}>{item.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="meal-form-field">
+            <span className="meal-form-label">Photo (optional)</span>
+            <div className="meal-photo-upload">
+              <label className="app-button app-button--secondary meal-photo-button">
+                {uploading ? 'Uploading...' : 'Upload photo'}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="sr-only"
+                  disabled={uploading}
+                  onChange={handlePhotoChange}
+                />
+              </label>
+              <span className="meal-form-help">JPG, PNG or WebP, up to 2 MB.</span>
+            </div>
+            {uploadError && <p role="alert">{uploadError}</p>}
+          </div>
+
+          <div className="meal-form-field">
+            <label htmlFor="meal-image-url">Or paste an image link (optional)</label>
             <input
               id="meal-image-url"
               type="url"
@@ -99,7 +157,7 @@ export default function MealForm({ meal, onSave, onCancel, saving, error, blocke
               aria-describedby={errors.imageUrl ? 'meal-image-url-error meal-image-url-help' : 'meal-image-url-help'}
             />
             <span id="meal-image-url-help" className="meal-form-help">
-              Paste a link to a photo of the meal. Leave it blank to show a placeholder.
+              Uploading a photo fills in this link for you. Leave it blank to show a placeholder.
             </span>
             {errors.imageUrl && <p id="meal-image-url-error" role="alert">{errors.imageUrl}</p>}
             <div className="meal-image-preview">
@@ -117,7 +175,7 @@ export default function MealForm({ meal, onSave, onCancel, saving, error, blocke
           </label>
 
           <div className="staff-menu-actions">
-            <Button type="submit" disabled={saving || blocked}>
+            <Button type="submit" disabled={saving || blocked || uploading}>
               {saving ? 'Saving...' : 'Save meal'}
             </Button>
             <Button variant="secondary" onClick={onCancel} disabled={saving}>
