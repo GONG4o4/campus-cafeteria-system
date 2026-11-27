@@ -1053,24 +1053,6 @@
   line-height: 1.6;
 }
 
-.penalty-notice-details {
-  margin-top: 10px;
-  font-size: 14px;
-}
-
-.penalty-notice-details summary {
-  color: #a51c30;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.penalty-notice-details ul {
-  margin: 8px 0 0;
-  padding-left: 20px;
-  color: #4a3f3b;
-  line-height: 1.6;
-}
-
 @media (max-width: 600px) {
   .penalty-notice {
     padding: 14px;

@@ -13,16 +13,6 @@ function formatDateTime(value) {
   })
 }
 
-function formatDate(value) {
-  if (!value) return ''
-
-  return new Date(`${value}T00:00:00`).toLocaleDateString('en-PH', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
 // Shows the customer a notice when they have no-show penalties.
 // - Red: ordering is paused (active restriction).
 // - Yellow: warning, they have some no-shows but can still order.
@@ -70,9 +60,6 @@ export default function PenaltyNotice() {
     return null
   }
 
-  // Only the no-shows that still count toward the limit.
-  const recentHistory = status.history.filter((item) => item.counts_toward_policy)
-
   return (
     <section
       className={restriction ? 'penalty-notice penalty-notice--restricted' : 'penalty-notice'}
@@ -102,19 +89,6 @@ export default function PenaltyNotice() {
               will be paused for {status.restriction_days} days.
             </p>
           </>
-        )}
-
-        {recentHistory.length > 0 && (
-          <details className="penalty-notice-details">
-            <summary>See uncollected orders</summary>
-            <ul>
-              {recentHistory.map((item) => (
-                <li key={item.no_show_id}>
-                  Queue #{item.queue_number} on {formatDate(item.order_date)}
-                </li>
-              ))}
-            </ul>
-          </details>
         )}
       </div>
     </section>
