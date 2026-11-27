@@ -3,6 +3,8 @@ import MealImage from './MealImage'
 import { formatMoney } from '../../utils/orders'
 
 export default function MenuCard({ item, onAdd, isBestSeller = false }) {
+  const isFeatured = item.is_featured === true
+
   let cardClass = 'menu-card'
 
   if (!item.is_available) {
@@ -16,6 +18,12 @@ export default function MenuCard({ item, onAdd, isBestSeller = false }) {
         <span className="meal-availability">
           {item.is_available ? 'Available' : 'Unavailable'}
         </span>
+        {isFeatured && (
+          <span className="featured-badge">
+            <span aria-hidden="true">♥</span>
+            Featured
+          </span>
+        )}
         {isBestSeller && (
           <span className="best-seller-badge">
             <span aria-hidden="true">★</span>

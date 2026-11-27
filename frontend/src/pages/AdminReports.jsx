@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Alert, Loading } from '../components/ui/Feedback'
 import { getReports } from '../adminApi'
+import SalesStats from '../components/SalesStats'
 import { formatMoney } from '../utils/orders'
 import './StaffMenu.css'
 import './AdminDashboard.css'
@@ -41,6 +42,8 @@ export default function AdminReports() {
           <p>System-wide order and sales numbers.</p>
         </div>
       </div>
+
+      <SalesStats />
 
       {error && <Alert error>{error}</Alert>}
       {!report && !error && <Loading>Loading reports...</Loading>}

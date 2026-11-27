@@ -71,15 +71,3 @@ The query joins `orders` and `order_items` and groups by menu item. At campus
 cafeteria volume this is fast without new indexes, so none were added. If
 `order_items` grows very large, an index on `order_items (order_id)` is the
 first one to add.
-
-## Tests
-
-`backend/test/bestSellers.test.js`:
-
-- **API tests** (database mocked): response shape, no revenue in the response,
-  empty list, error handling, and that `/best-sellers` is not read as an item ID.
-- **Ranking tests** (real database): more units rank higher, the same item is
-  added up across orders, excluded statuses don't count, tie-breaking, the
-  10-item limit, empty data, and the 30-day Manila window. Each test runs in a
-  transaction that is always rolled back, so it never changes data. They are
-  skipped when no database is available.

@@ -10,7 +10,8 @@ function isValidMeal(meal) {
     Number.isFinite(Number(meal.price)) &&
     Number(meal.price) >= 0 &&
     typeof meal.is_available === 'boolean' &&
-    (meal.image_url == null || typeof meal.image_url === 'string')
+    (meal.image_url == null || typeof meal.image_url === 'string') &&
+    (meal.is_featured == null || typeof meal.is_featured === 'boolean')
   )
 }
 
@@ -22,6 +23,7 @@ function formatMeal(meal) {
     price: Number(meal.price),
     available: Boolean(meal.is_available),
     imageUrl: meal.image_url ?? '',
+    featured: meal.is_featured === true,
   }
 }
 

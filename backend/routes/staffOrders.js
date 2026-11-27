@@ -5,6 +5,7 @@ const {
   requireRole,
 } = require('../middleware/authMiddleware')
 const { markOrderNoShow, getPenaltySummary } = require('../services/noShow')
+const { isValidPeriod, getSalesStats } = require('../services/salesStats')
 
 const router = express.Router()
 
@@ -293,6 +294,29 @@ router.get('/customers/:id/no-shows', requireRole('cafeteria_staff', 'super_admi
 
     return res.status(500).json({
       message: 'Unable to load no-show history.',
+    })
+  }
+})
+
+// GET /api/staff/stats?period=day|week|month|year
+// Sales numbers, trend and top meals. Staff and super admins can view it.
+router.get('/stats', requireRole('cafeteria_staff', 'super_admin'), async (req, res) => {
+  const period = req.query.period || 'day'
+
+  if (!isValidPeriod(period)) {
+    return res.status(400).json({
+      message: 'Period must be day, week, month or year.',
+    })
+  }
+
+  try {
+    const stats = await getSalesStats(pool, period)
+    return res.json(stats)
+  } catch (error) {
+    console.error('Sales stats failed:', error.message)
+
+    return res.status(500).json({
+      message: 'Unable to load sales statistics.',
     })
   }
 })
