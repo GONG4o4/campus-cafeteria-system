@@ -5,7 +5,8 @@ export default function StaffNavigation({ page, onNavigate, children }) {
     { page: 'staff-dashboard', path: '/staff', label: 'Dashboard' },
     { page: 'staff-orders', path: '/staff/orders', label: 'Order queue' },
     { page: 'staff-menu', path: '/staff/menu', label: 'Menu management' },
-    { page: 'staff-summary', path: '/staff/summary', label: 'Daily summary' },
+    { page: 'staff-summary', path: '/staff/summary', label: 'Sales statistics' },
+    { page: 'staff-feedback', path: '/staff/feedback', label: 'Feedback & reports' },
   ]
 
   function handleLink(event, nextPage) {

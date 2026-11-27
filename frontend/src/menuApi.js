@@ -9,7 +9,9 @@ function isValidMeal(meal) {
     meal.price != null &&
     Number.isFinite(Number(meal.price)) &&
     Number(meal.price) >= 0 &&
-    typeof meal.is_available === 'boolean'
+    typeof meal.is_available === 'boolean' &&
+    (meal.image_url == null || typeof meal.image_url === 'string') &&
+    (meal.is_featured == null || typeof meal.is_featured === 'boolean')
   )
 }
 
@@ -20,6 +22,8 @@ function formatMeal(meal) {
     description: meal.description ?? '',
     price: Number(meal.price),
     available: Boolean(meal.is_available),
+    imageUrl: meal.image_url ?? '',
+    featured: meal.is_featured === true,
   }
 }
 
@@ -56,6 +60,40 @@ export async function getMenu(signal) {
   }
 
   return data.map(formatMeal)
+}
+
+// Returns the menu item IDs of the current Top 10 best sellers.
+// The backend decides the ranking; the menu only matches IDs.
+export async function getBestSellerIds(signal) {
+  const response = await fetch('http://localhost:3000/api/menu/best-sellers', { signal })
+
+  let data
+
+  try {
+    data = await response.json()
+  } catch {
+    data = null
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to load best sellers.')
+  }
+
+  if (!Array.isArray(data?.items)) {
+    throw new Error('The best sellers service returned an invalid list.')
+  }
+
+  const ids = []
+
+  for (const item of data.items) {
+    if (!Number.isInteger(item?.menu_item_id) || item.menu_item_id < 1) {
+      throw new Error('The best sellers service returned an invalid list.')
+    }
+
+    ids.push(item.menu_item_id)
+  }
+
+  return ids
 }
 
 export async function saveMeal(meal, id) {
@@ -95,6 +133,7 @@ export async function saveMeal(meal, id) {
         description: meal.description?.trim() || null,
         price: String(meal.price).trim(),
         is_available: meal.available,
+        image_url: meal.imageUrl?.trim() || null,
       }),
     })
   } catch (cause) {
@@ -144,6 +183,75 @@ export async function saveMeal(meal, id) {
   }
 
   return formatMeal(data.item)
+}
+
+export async function deleteMeal(id) {
+  if (!Number.isInteger(id) || id < 1) {
+    throw new Error('This meal has an invalid ID. Refresh the menu and try again.')
+  }
+
+  const token = localStorage.getItem('token')
+
+  if (!token) {
+    throw new Error('Please sign in before changing the menu.')
+  }
+
+  let response
+
+  try {
+    response = await fetch(`http://localhost:3000/api/menu/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  } catch (cause) {
+    const error = new Error(
+      'We could not confirm whether the meal was deleted. Refresh the menu and check it before trying again.',
+      { cause },
+    )
+    error.saveStatusUnknown = true
+    throw error
+  }
+
+  if (response.status === 401) {
+    throw new Error('Your session has expired. Please sign in again.')
+  }
+
+  if (response.status === 403) {
+    throw new Error('Only cafeteria staff can change the menu.')
+  }
+
+  if (response.status === 409) {
+    throw new Error(
+      'This meal is part of past orders, so it cannot be deleted. Mark it unavailable instead.',
+    )
+  }
+
+  let data
+
+  try {
+    data = await response.json()
+  } catch (cause) {
+    const error = new Error(
+      'The menu service returned an unreadable response. Refresh the menu before trying again.',
+      { cause },
+    )
+    error.saveStatusUnknown = true
+    throw error
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.message || 'Unable to delete the meal. Please try again.')
+  }
+
+  if (data?.item?.menu_item_id !== id) {
+    const error = new Error(
+      'The deleted meal could not be confirmed. Refresh the menu before trying again.',
+    )
+    error.saveStatusUnknown = true
+    throw error
+  }
+
+  return id
 }
 
 export function notifyMenuChanged() {

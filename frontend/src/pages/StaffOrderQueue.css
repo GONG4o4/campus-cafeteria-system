@@ -92,6 +92,76 @@
   color: #a51c30;
 }
 
+.staff-queue-status.status-no_show {
+  background: #3a2a2c;
+  color: #fff;
+}
+
+/* Ready orders waiting to be collected stand out from the rest. */
+.staff-queue-card--awaiting {
+  border-color: #8cc79b;
+  border-width: 2px;
+}
+
+.staff-queue-card--overdue {
+  border-color: #d9822b;
+  border-width: 2px;
+}
+
+.staff-pickup-info,
+.staff-penalty-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.staff-pickup-info {
+  background: #e4f5e8;
+  color: #216a34;
+}
+
+.staff-pickup-info--overdue {
+  background: #fdebd6;
+  color: #8a4300;
+}
+
+.staff-penalty-info {
+  background: #f1e8e8;
+  color: #3a2a2c;
+}
+
+.staff-queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.staff-no-show-confirm {
+  margin-top: auto;
+  padding: 16px;
+  border: 1px solid #d9822b;
+  border-radius: 12px;
+  background: #fff8ef;
+}
+
+.staff-no-show-confirm p {
+  margin: 8px 0 14px;
+  color: #6f5f5a;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.staff-no-show-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .staff-queue-items {
   margin: 20px 0;
   border-top: 1px solid #e9dcc3;

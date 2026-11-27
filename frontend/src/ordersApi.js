@@ -1,4 +1,3 @@
-
 function formatOrder(order) {
   let createdAt = order.ordered_at
 
@@ -11,6 +10,7 @@ function formatOrder(order) {
     reference: `Order #${order.order_id}`,
     queueNumber: order.queue_number,
     status: order.status,
+    paymentStatus: order.payment_status,
     total: Number(order.total_amount),
 
     createdAt,
@@ -39,6 +39,7 @@ export async function getOrders(id, signal) {
         Authorization: `Bearer ${token}`,
       },
       signal,
+      cache: 'no-store'
     })
   } catch (error) {
     if (error.name === 'AbortError') {
@@ -92,6 +93,29 @@ export async function getOrders(id, signal) {
   }
 
   return data.map(formatOrder)
+}
+
+// Asks the backend to check with HitPay if this order has been paid.
+export async function verifyPayment(id) {
+  const token = localStorage.getItem('token')
+
+  const response = await fetch(
+    `http://localhost:3000/api/orders/${id}/verify-payment`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  )
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Unable to check payment status')
+  }
+
+  return data
 }
 
 export async function cancelOrder(id) {

@@ -1,7 +1,10 @@
 import Button from '../ui/Button'
+import MealImage from './MealImage'
 import { formatMoney } from '../../utils/orders'
 
-export default function MenuCard({ item, onAdd }) {
+export default function MenuCard({ item, onAdd, isBestSeller = false }) {
+  const isFeatured = item.is_featured === true
+
   let cardClass = 'menu-card'
 
   if (!item.is_available) {
@@ -10,9 +13,24 @@ export default function MenuCard({ item, onAdd }) {
 
   return (
     <article className={cardClass}>
-      <span className="meal-availability">
-        {item.is_available ? 'Available' : 'Unavailable'}
-      </span>
+      <MealImage src={item.image_url || ''} alt={`Photo of ${item.name}`} />
+      <div className="menu-card-tags">
+        <span className="meal-availability">
+          {item.is_available ? 'Available' : 'Unavailable'}
+        </span>
+        {isFeatured && (
+          <span className="featured-badge">
+            <span aria-hidden="true">♥</span>
+            Featured
+          </span>
+        )}
+        {isBestSeller && (
+          <span className="best-seller-badge">
+            <span aria-hidden="true">★</span>
+            Best Seller
+          </span>
+        )}
+      </div>
       <h2>{item.name}</h2>
       <p>{item.description || 'No description available.'}</p>
 
@@ -26,5 +44,19 @@ export default function MenuCard({ item, onAdd }) {
         </Button>
       </div>
     </article>
+  )
+}
+
+// Grey placeholder card shown while the menu is loading for the first time.
+export function MenuCardSkeleton() {
+  return (
+    <div className="menu-card menu-card-skeleton" aria-hidden="true">
+      <div className="skeleton-block skeleton-image" />
+      <div className="skeleton-block skeleton-badge" />
+      <div className="skeleton-block skeleton-title" />
+      <div className="skeleton-block skeleton-text" />
+      <div className="skeleton-block skeleton-text skeleton-text--short" />
+      <div className="skeleton-block skeleton-button" />
+    </div>
   )
 }

@@ -1,12 +1,22 @@
 const express = require("express");
 const pool = require("../db");
-const {authenticateToken, requireRole} = require ("../middleware/authMiddleware");
+const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
+const { createPaymentRequest, getPaymentRequest } = require("../services/hitpay");
+const { confirmPayment } = require("../services/paymentConfirm");
+const { findActiveRestriction, getPenaltySummary, getPolicy } = require("../services/noShow");
 
 const router = express.Router();
 
 const orderSelect = `
     SELECT o.order_id, o.queue_number, o.status, o.total_amount, o.order_date,
            TO_CHAR(o.ordered_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ordered_at,
+           COALESCE((
+               SELECT p.status 
+               FROM payments p 
+               WHERE p.order_id = o.order_id 
+               ORDER BY p.payment_id DESC 
+               LIMIT 1
+           ), 'unpaid') AS payment_status,
            COALESCE((
                SELECT json_agg(json_build_object(
                    'order_item_id', i.order_item_id,
@@ -39,6 +49,34 @@ router.get("/", authenticateToken, requireRole("student"), async (req, res) => {
     }
 });
 
+// The no-show policy shown at checkout. The numbers come from the
+// database so the checkout warning always matches what the backend enforces.
+router.get("/no-show-policy", authenticateToken, requireRole("student"), async (req, res) => {
+    try {
+        const policy = await getPolicy(pool);
+        return res.json(policy);
+    } catch (error) {
+        console.error("No-show policy failed:", error.message);
+        return res.status(500).json({
+            message: "Unable to load the pickup policy. Please try again."
+        });
+    }
+});
+
+// The logged-in student's own no-show history and restriction status.
+// Must stay above "/:id" so "penalty-status" is not read as an order ID.
+router.get("/penalty-status", authenticateToken, requireRole("student"), async (req, res) => {
+    try {
+        const summary = await getPenaltySummary(pool, req.user.user_id);
+        return res.json(summary);
+    } catch (error) {
+        console.error("Penalty status failed:", error.message);
+        return res.status(500).json({
+            message: "Unable to load your account status. Please try again."
+        });
+    }
+});
+
 router.get("/:id", authenticateToken, requireRole("student"), async (req, res) => {
     const id = Number(req.params.id);
 
@@ -65,6 +103,81 @@ router.get("/:id", authenticateToken, requireRole("student"), async (req, res) =
     }
 });
 
+// Called by the payment success page. Asks HitPay directly if the order
+// was paid, and if so assigns the queue number. This works even when HitPay
+// cannot reach our webhook (for example when the backend runs on localhost).
+router.post("/:id/verify-payment", authenticateToken, requireRole("student"), async (req, res) => {
+    const id = Number(req.params.id);
+
+    if (!/^[1-9]\d*$/.test(req.params.id) || !Number.isSafeInteger(id) || id > 2147483647) {
+        return res.status(400).json({ message: "Invalid order ID" });
+    }
+
+    let client;
+    try {
+        // Only look at the student's own order.
+        const paymentResult = await pool.query(
+            `SELECT p.checkout_session_id, p.status
+             FROM payments p
+             JOIN orders o ON o.order_id = p.order_id
+             WHERE o.order_id = $1 AND o.user_id = $2
+             ORDER BY p.payment_id DESC
+             LIMIT 1`,
+            [id, req.user.user_id]
+        );
+
+        if (paymentResult.rows.length === 0) {
+            return res.status(404).json({ message: "Payment not found for this order" });
+        }
+
+        const payment = paymentResult.rows[0];
+
+        // Already paid or cancelled, nothing to check with HitPay.
+        if (payment.status !== "pending") {
+            return res.json({ payment_status: payment.status });
+        }
+
+        const hitpayPayment = await getPaymentRequest(payment.checkout_session_id);
+
+        if (hitpayPayment.status !== "completed") {
+            return res.json({ payment_status: "pending" });
+        }
+
+        client = await pool.connect();
+        await client.query("BEGIN");
+
+        const result = await confirmPayment(
+            client,
+            payment.checkout_session_id,
+            hitpayPayment.amount,
+            `verify_${payment.checkout_session_id}_${Date.now()}`
+        );
+
+        if (result === "paid") {
+            await client.query("COMMIT");
+            return res.json({ payment_status: "paid" });
+        }
+
+        await client.query("ROLLBACK");
+
+        if (result === "already_paid") {
+            return res.json({ payment_status: "paid" });
+        }
+
+        return res.status(400).json({ message: "Payment could not be confirmed" });
+    } catch (error) {
+        if (client) {
+            await client.query("ROLLBACK");
+        }
+        console.error("Payment verify failed:", error.message);
+        return res.status(500).json({ message: "Unable to check payment status. Please try again." });
+    } finally {
+        if (client) {
+            client.release();
+        }
+    }
+});
+
 const toCents = (price) => {
      const [whole, fraction = ""] = String(price).split(".");
      return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
@@ -80,6 +193,15 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
     if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
         return res.status(400).json({
             message: "Invalid or empty cart"
+            });
+        }
+
+        // The customer must tick the no-show policy checkbox at checkout.
+        // Checked here too, so calling the API directly cannot skip it.
+        if (req.body?.acknowledge_no_show_policy !== true) {
+            return res.status(400).json({
+                message: "Please confirm that you have read the pickup and no-show policy before placing your order.",
+                code: "NO_SHOW_POLICY_NOT_ACKNOWLEDGED"
             });
         }
 
@@ -100,9 +222,22 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
             try {
                 client = await pool.connect();
                 await client.query("BEGIN");
+
+                // Customers with an active no-show restriction cannot order.
+                const restriction = await findActiveRestriction(client, req.user.user_id);
+
+                if (restriction) {
+                    await client.query("ROLLBACK");
+                    return res.status(403).json({
+                        message: `Your account cannot place orders until ${restriction.ends_at} because of uncollected orders.`,
+                        code: "ORDERING_RESTRICTED",
+                        restriction: restriction
+                    });
+                }
+
                 const ids = items.map(item => item.menu_item_id);
                 const menuResult = await client.query(
-                    `SELECT menu_item_id, price, is_available
+                    `SELECT menu_item_id, price, is_available, name
                     FROM menu_items
                     WHERE menu_item_id = ANY($1::int[])
                     ORDER BY menu_item_id
@@ -130,6 +265,7 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
 
                     orderItems.push({
                         menu_item_id: item.menu_item_id,
+                        name: menuItem.name,
                         quantity: item.quantity,
                         unit_price: toAmount(unitCents),
                         subtotal: toAmount(subtotalCents)
@@ -143,53 +279,59 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
                     });
                 }
 
-                await client.query(
-                    "SELECT pg_advisory_xact_lock(34034, 1)"
-                );
-
                 const dateResult = await client.query(
                     `SELECT TO_CHAR(
                         (CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Manila')::date, 'YYYY-MM-DD') AS order_date`
                 );
 
-        const orderDate = dateResult.rows[0].order_date;
+                const orderDate = dateResult.rows[0].order_date;
 
-        const queueResult = await client.query(
-            `SELECT COALESCE(MAX(queue_number), 0) + 1 AS next_number FROM  orders WHERE order_date = $1::date`,
-            [orderDate]
-        );
+                // Save which policy version the customer accepted.
+                // The time is the server's time, not the browser's.
+                const policy = await getPolicy(client);
 
-        const queueNumber = Number(queueResult.rows[0].next_number);
+                const orderResult = await client.query(
+                    `INSERT INTO orders (user_id, total_amount, order_date, no_show_ack_at, no_show_policy_version)
+                    VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
+                    RETURNING order_id, status, total_amount, order_date`,
+                    [
+                        req.user.user_id, toAmount(totalCents), orderDate, policy.policy_version
+                    ]
+                );
 
-        const orderResult = await client.query(
-            `INSERT INTO orders (user_id, queue_number, total_amount, order_date) VALUES ($1, $2, $3, $4)
-            RETURNING order_id, queue_number, status, total_amount, order_date`,
-            [
-                req.user.user_id, queueNumber, toAmount(totalCents), orderDate
-            ]
-        );
+                const order = orderResult.rows[0];
 
-    const order = orderResult.rows[0];
+                for (const item of orderItems) {
+                    await client.query(
+                        `INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)`,
+                        [
+                            order.order_id, item.menu_item_id, item.quantity, item.unit_price, item.subtotal
+                        ]
+                    );
+                }
 
-    for (const item of orderItems) {
-        await client.query(
-            `INSERT INTO order_items (order_id, menu_item_id, quantity, unit_price, subtotal) VALUES ($1, $2, $3, $4, $5)`,
-            [
-                order.order_id, item.menu_item_id, item.quantity, item.unit_price, item.subtotal
-            ]
-        );
-    }
+                const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+                const redirectUrl = `${clientUrl}/payment/success?order_id=${order.order_id}`;
 
-    await client.query("COMMIT");
+                const hitpayData = await createPaymentRequest(
+                    order.order_id,
+                    order.total_amount,
+                    redirectUrl
+                );
 
-    return res.status(201).json({
-        message: "Order placed successfully",
-        order_id: order.order_id,
-        queue_number: order.queue_number,
-        status: order.status,
-        total_amount: order.total_amount,
-        order_date: order.order_date
-    });
+                await client.query(
+                    `INSERT INTO payments (order_id, checkout_session_id, reference_number, amount, status) VALUES ($1, $2, $3, $4, 'pending')`,
+                    [order.order_id, hitpayData.paymentRequestId, hitpayData.referenceNumber, order.total_amount]
+                );
+
+                await client.query("COMMIT");
+
+                return res.status(201).json({
+                    message: "Order created. Please complete payment.",
+                    order_id: order.order_id,
+                    checkout_url: hitpayData.checkoutUrl,
+                    total_amount: order.total_amount
+                });
 
 } catch (error){
     if (client) {
@@ -203,7 +345,8 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
     console.error("Order creation failed: ", error.message);
 
     return res.status(500).json({
-        message: "Failed to create order"
+        message: "Failed to create order",
+        details: error.message
     });
 
     } finally {
@@ -224,8 +367,12 @@ router.patch("/:id/cancel", authenticateToken, requireRole("student"), async (re
     return res.status(400).json({ message: "Invalid order ID" });
   }
 
+  let client;
   try {
-    const updated = await pool.query(
+    client = await pool.connect();
+    await client.query("BEGIN");
+
+    const updated = await client.query(
       `UPDATE orders
        SET status = 'cancelled',
            updated_at = CURRENT_TIMESTAMP
@@ -237,16 +384,27 @@ router.patch("/:id/cancel", authenticateToken, requireRole("student"), async (re
     );
 
     if (updated.rows.length > 0) {
+      await client.query(
+        `UPDATE payments
+         SET status = 'cancelled',
+             updated_at = CURRENT_TIMESTAMP
+         WHERE order_id = $1
+           AND status IN ('unpaid', 'pending')`,
+        [id]
+      );
+      await client.query("COMMIT");
       return res.json({
         message: "Order cancelled successfully",
         order: updated.rows[0]
       });
     }
 
-    const existing = await pool.query(
+    const existing = await client.query(
       "SELECT status FROM orders WHERE order_id = $1 AND user_id = $2",
       [id, req.user.user_id]
     );
+
+    await client.query("ROLLBACK");
 
     if (existing.rows.length === 0) {
       return res.status(404).json({ message: "Order not found" });
@@ -255,13 +413,27 @@ router.patch("/:id/cancel", authenticateToken, requireRole("student"), async (re
     return res.status(409).json({
       message: "Only pending orders can be cancelled"
     });
-  } catch (error) {
-    console.error("Order cancellation failed:", error.message);
+} catch (error){
+    if (client) {
+        try {
+            await client.query("ROLLBACK");
+        } catch (rollbackError){
+            console.error("Order rollback failed:", rollbackError.message);
+        }
+    }
+
+    console.error("Order creation failed: ", error.message);
 
     return res.status(500).json({
-      message: "Unable to cancel the order"
+        message: "Failed to create order",
+        details: error.message || "Unknown error"
     });
-  }
+
+    } finally {
+        if (client) {
+            client.release();
+        }
+    }
 });
 
 module.exports = router;

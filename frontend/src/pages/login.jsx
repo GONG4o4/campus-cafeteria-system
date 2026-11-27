@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react'
 import { isValidEmail, submitAuthRequest } from '../authApi.js'
+import AuthLayout, { PasswordField } from '../components/AuthLayout.jsx'
 import './login.css'
 
-function Login({ onNavigate, sessionError = '' }) {
-  const [email, setEmail] = useState('')
+function Login({ onNavigate, sessionError = '', notice = '', initialEmail = '' }) {
+  const [email, setEmail] = useState(initialEmail)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
@@ -63,68 +64,61 @@ function Login({ onNavigate, sessionError = '' }) {
   }
 
   return (
-    <main className="account-page">
-      <section className="account-panel">
-        <a className="brand" href="/" onClick={(event) => {
+    <AuthLayout
+      onNavigate={onNavigate}
+      title="Welcome back"
+      subtitle="Sign in to order your meals and check your queue number."
+    >
+      {notice && !error && !message && (
+        <p className="form-success" role="status">{notice}</p>
+      )}
+
+      <form className="account-form" onSubmit={handleSubmit}>
+        <div className="form-field">
+          <label htmlFor="login-email">Email</label>
+          <input
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            placeholder="email@wmsu.edu.ph"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+        </div>
+
+        <PasswordField
+          id="login-password"
+          label="Password"
+          autoComplete="current-password"
+          placeholder="Enter your password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+
+        <div className="form-feedback" aria-live="polite">
+          {(error || sessionError) && (
+            <p className="form-error" role="alert">{error || sessionError}</p>
+          )}
+          {message && <p className="form-notice" role="status">{message}</p>}
+        </div>
+
+        <button className="submit-button" type="submit" disabled={loading}>
+          {loading && <span className="loading-mark" aria-hidden="true" />}
+          {loading ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
+
+      <p className="other-account">
+        New to Queu?{' '}
+        <a href="/register" onClick={(event) => {
           event.preventDefault()
-          onNavigate('landing')
+          onNavigate('register')
         }}>
-          Que<span>u</span>
+          Create an account
         </a>
-        <p className="account-caption">Campus cafeteria system</p>
-        <h1>Welcome back</h1>
-
-        <form className="account-form" onSubmit={handleSubmit}>
-          <div className="form-field">
-            <label htmlFor="login-email">Email</label>
-            <input
-              id="login-email"
-              type="email"
-              autoComplete="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="login-password">Password</label>
-            <input
-              id="login-password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-feedback" aria-live="polite">
-            {(error || sessionError) && (
-              <p className="form-error" role="alert">{error || sessionError}</p>
-            )}
-            {message && <p className="form-notice" role="status">{message}</p>}
-          </div>
-
-          <button className="submit-button" type="submit" disabled={loading}>
-            {loading && <span className="loading-mark" aria-hidden="true" />}
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-
-        <p className="other-account">
-          New to Queu?{' '}
-          <a href="/register" onClick={(event) => {
-            event.preventDefault()
-            onNavigate('register')
-          }}>
-            Create an account
-          </a>
-        </p>
-      </section>
-    </main>
+      </p>
+    </AuthLayout>
   )
 }
 

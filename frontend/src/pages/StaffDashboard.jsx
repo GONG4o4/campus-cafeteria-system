@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from 'react'
 import Button from '../components/ui/Button'
 import { Alert } from '../components/ui/Feedback'
@@ -25,7 +24,7 @@ function getTodayInManila() {
   return `${date.year}-${date.month}-${date.day}`
 }
 
-export default function StaffDashboard({ onNavigate }) {
+export default function StaffDashboard({ onNavigate, showTasks = true }) {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -76,14 +75,17 @@ export default function StaffDashboard({ onNavigate }) {
 
   useEffect(() => {
     const controller = new AbortController()
-
-    loadOrders(controller.signal)
+    
+    const timeoutId = setTimeout(() => {
+      loadOrders(controller.signal)
+    }, 0)
 
     const interval = setInterval(() => {
       loadOrders(controller.signal)
     }, 10000)
 
     return () => {
+      clearTimeout(timeoutId)
       clearInterval(interval)
       controller.abort()
     }
@@ -176,6 +178,7 @@ export default function StaffDashboard({ onNavigate }) {
 
       <StaffAnalytics today={today} refreshKey={refreshKey} />
 
+      {showTasks && (
       <section aria-labelledby="staff-tasks-heading">
         <h2 id="staff-tasks-heading">What do you need to do?</h2>
 
@@ -199,6 +202,7 @@ export default function StaffDashboard({ onNavigate }) {
           ))}
         </div>
       </section>
+      )}
     </main>
   )
 }

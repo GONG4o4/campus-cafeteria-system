@@ -7,7 +7,7 @@ const {
 
 const router = express.Router()
 
-const statusList = ['pending', 'preparing', 'ready', 'picked_up', 'cancelled']
+const statusList = ['pending', 'preparing', 'ready', 'picked_up', 'cancelled', 'no_show']
 
 // Same business date rule as the queue: the date in Asia/Manila.
 function getTodayInManila() {
@@ -135,7 +135,7 @@ router.get(
 
       const summary = summaryResult.rows[0]
 
-      // Always send all five statuses, using 0 when there are no orders.
+      // Always send every status, using 0 when there are no orders.
       const ordersByStatus = statusList.map((status) => {
         const row = statusResult.rows.find((item) => item.status === status)
 

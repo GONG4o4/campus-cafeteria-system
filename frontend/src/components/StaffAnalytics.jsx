@@ -9,6 +9,7 @@ const statusLabels = {
   ready: 'Ready',
   picked_up: 'Picked up',
   cancelled: 'Cancelled',
+  no_show: 'No-show',
 }
 
 function formatPeso(amount) {

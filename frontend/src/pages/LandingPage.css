@@ -57,7 +57,7 @@
 .landing-brand {
   display: inline-block;
   color: #a51c30;
-  font-family: 'Dancing Script', 'Playfair Display', Georgia, serif;
+  font-family: 'Open Sans', Arial, sans-serif;
   font-size: 34px;
   font-weight: 600;
   line-height: 1;
@@ -68,7 +68,7 @@
   display: block;
   margin-top: 2px;
   color: #6f5f5a;
-  font-family: 'DM Sans', Arial, sans-serif;
+  font-family: 'Open Sans', Arial, sans-serif;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 1.5px;
@@ -191,7 +191,7 @@
 .landing-page em {
   display: block;
   padding-left: 60px;
-  font-family: 'Dancing Script', 'Playfair Display', Georgia, serif;
+  font-family: 'Open Sans', Arial, sans-serif;
   font-size: 1.15em;
   font-style: normal;
   font-weight: 600;
@@ -217,6 +217,8 @@
   margin: 0;
   font-size: 84px;
   line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -2px;
 }
 
 .landing-hero h1 span {
@@ -230,7 +232,7 @@
 
 .landing-hero h1 .landing-title-script {
   color: #a51c30;
-  font-family: 'Dancing Script', 'Playfair Display', Georgia, serif;
+  font-family: 'Open Sans', Arial, sans-serif;
   font-size: 1.15em;
   font-weight: 600;
 }
@@ -311,9 +313,9 @@
 .landing-plate-badge strong {
   display: block;
   color: #a51c30;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Open Sans', Arial, sans-serif;
   font-size: 20px;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 /* Benefits panel */
@@ -468,9 +470,9 @@
 
 .landing-collection h3 {
   margin: 16px 16px 6px;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Open Sans', Arial, sans-serif;
   font-size: 19px;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .landing-collection p {
@@ -552,9 +554,9 @@
   display: block;
   margin: 8px 0;
   color: #a51c30;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Open Sans', Arial, sans-serif;
   font-size: 64px;
-  font-weight: 500;
+  font-weight: 800;
   line-height: 1.1;
 }
 
@@ -781,5 +783,371 @@
   .landing-features,
   .landing-footer-content {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Logged-in user area in the header ===== */
+.landing-user {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: 10px;
+}
+
+.landing-user-name {
+  color: #6f5f5a;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.landing-user-name strong {
+  color: #2e1a1c;
+}
+
+.landing-cart {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #6e0f1f;
+  color: #fbf6ea;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.landing-cart:hover {
+  background: #a51c30;
+}
+
+.landing-cart-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e9c9a0;
+  color: #6e0f1f;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+  animation: landing-pop 0.4s ease;
+}
+
+.landing-logout {
+  padding: 10px 16px;
+  border: 1px solid #a51c30;
+  border-radius: 999px;
+  background: transparent;
+  color: #a51c30;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+}
+
+.landing-logout:hover {
+  background: #a51c30;
+  color: #fbf6ea;
+}
+
+/* ===== Top picks ===== */
+.landing-picks {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.landing-pick {
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  border: 1px solid #e9dcc3;
+  border-radius: 18px;
+  background: #fffcf5;
+  color: #2e1a1c;
+  text-decoration: none;
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+
+.landing-pick:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 32px rgba(110, 15, 31, 0.14);
+}
+
+.landing-pick .meal-image {
+  margin-bottom: 12px;
+}
+
+.landing-pick .meal-image-photo {
+  transition: opacity 0.3s, transform 0.4s;
+}
+
+.landing-pick:hover .meal-image-photo--loaded {
+  transform: scale(1.06);
+}
+
+.landing-pick-tag {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #fbe8ea;
+  color: #a51c30;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.landing-pick h3 {
+  margin: 10px 0 6px;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+
+.landing-pick strong {
+  margin-top: auto;
+  color: #a51c30;
+}
+
+/* ===== Animations ===== */
+
+/* Hero text slides up one line after another when the page opens */
+.landing-hero-content > div:first-child > * {
+  animation: landing-fade-up 0.7s ease both;
+}
+
+.landing-hero h1 span {
+  animation: landing-fade-up 0.7s ease both;
+}
+
+.landing-hero h1 span:nth-child(1) { animation-delay: 0.1s; }
+.landing-hero h1 span:nth-child(2) { animation-delay: 0.22s; }
+.landing-hero h1 span:nth-child(3) { animation-delay: 0.34s; }
+.landing-hero-content .landing-description { animation-delay: 0.45s; }
+.landing-hero-content .landing-actions { animation-delay: 0.55s; }
+.landing-hero-content .landing-hero-points { animation-delay: 0.65s; }
+
+/* Food photo zooms in, then floats gently */
+.landing-plate {
+  animation: landing-zoom-in 0.9s ease both 0.2s;
+}
+
+.landing-plate img {
+  animation: landing-float 6s ease-in-out infinite 1.2s;
+}
+
+.landing-plate-badge {
+  animation: landing-pop 0.6s ease both 0.9s;
+}
+
+/* Header slides down */
+.landing-header {
+  animation: landing-fade-down 0.6s ease both;
+}
+
+/* Buttons and arrows */
+.landing-pill span,
+.landing-section-title a {
+  transition: transform 0.2s;
+}
+
+.landing-pill:hover span {
+  transform: translateX(4px);
+}
+
+.landing-collection-icon {
+  display: inline-block;
+  transition: transform 0.3s;
+}
+
+.landing-collection:hover .landing-collection-icon {
+  transform: scale(1.2) rotate(-8deg);
+}
+
+.landing-features li {
+  transition: transform 0.25s;
+}
+
+.landing-features li:hover {
+  transform: translateY(-4px);
+}
+
+/* Sample queue ticket pulses slowly */
+.landing-ticket strong {
+  display: inline-block;
+  animation: landing-pulse 2.4s ease-in-out infinite;
+}
+
+/* Sections fade up when they scroll into view (see useRevealOnScroll) */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Cards inside a section come in one by one.
+   "backwards" only holds the first frame during the delay, so the
+   hover lift still works after the animation ends. */
+.reveal .landing-pick,
+.reveal .landing-collection,
+.reveal .landing-features li,
+.reveal .landing-benefits li {
+  opacity: 0;
+}
+
+.reveal.is-visible .landing-pick,
+.reveal.is-visible .landing-collection,
+.reveal.is-visible .landing-features li,
+.reveal.is-visible .landing-benefits li {
+  opacity: 1;
+  animation: landing-fade-up 0.6s ease backwards;
+}
+
+.reveal.is-visible .landing-pick:nth-child(2),
+.reveal.is-visible .landing-collection:nth-child(2),
+.reveal.is-visible .landing-features li:nth-child(2),
+.reveal.is-visible .landing-benefits li:nth-child(2) { animation-delay: 0.1s; }
+
+.reveal.is-visible .landing-pick:nth-child(3),
+.reveal.is-visible .landing-collection:nth-child(3),
+.reveal.is-visible .landing-features li:nth-child(3),
+.reveal.is-visible .landing-benefits li:nth-child(3) { animation-delay: 0.2s; }
+
+.reveal.is-visible .landing-pick:nth-child(4),
+.reveal.is-visible .landing-collection:nth-child(4),
+.reveal.is-visible .landing-features li:nth-child(4) { animation-delay: 0.3s; }
+
+@keyframes landing-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes landing-fade-down {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes landing-zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85) rotate(-6deg);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateY(-12px) rotate(2deg);
+  }
+}
+
+@keyframes landing-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+
+  70% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes landing-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+/* People who turn off motion in their device settings get no animations */
+@media (prefers-reduced-motion: reduce) {
+  .landing-page *,
+  .landing-page *::before,
+  .landing-page *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .reveal,
+  .reveal .landing-pick,
+  .reveal .landing-collection,
+  .reveal .landing-features li,
+  .reveal .landing-benefits li {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ===== Responsive for the new parts ===== */
+@media (max-width: 1000px) {
+  .landing-picks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .landing-user-name {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .landing-nav {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .landing-user {
+    gap: 6px;
+  }
+
+  .landing-cart,
+  .landing-logout {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .landing-picks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .landing-pick h3 {
+    font-size: 15px;
   }
 }

@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Button from '../components/ui/Button'
 import { Alert, Loading } from '../components/ui/Feedback'
@@ -10,6 +9,7 @@ const filters = [
   { value: 'preparing', label: 'Preparing' },
   { value: 'ready', label: 'Ready' },
   { value: 'picked_up', label: 'Picked up' },
+  { value: 'no_show', label: 'No-show' },
   { value: 'cancelled', label: 'Cancelled' },
 ]
 
@@ -24,6 +24,7 @@ const statusLabels = {
   preparing: 'Preparing',
   ready: 'Ready for pickup',
   picked_up: 'Picked up',
+  no_show: 'No-show',
   cancelled: 'Cancelled',
 }
 
@@ -34,14 +35,37 @@ function formatMoney(amount) {
   })}`
 }
 
-export default function StaffOrderQueue({ onNavigate }) {
+// "2026-11-22T14:05:00" -> "14:05"
+function formatTime(text) {
+  return text ? text.slice(11, 16) : ''
+}
+
+// "2026-11-22T14:05:00" -> "2026-11-22 · 14:05"
+function formatDateTime(text) {
+  return text ? `${text.slice(0, 10)} · ${text.slice(11, 16)}` : ''
+}
+
+// Only cafeteria staff can record a no-show. Super admins can view this
+// page but the backend refuses their no-show requests, so hide the button.
+function getUserRole() {
+  try {
+    return JSON.parse(localStorage.getItem('user'))?.role || ''
+  } catch {
+    return ''
+  }
+}
+
+export default function StaffOrderQueue() {
   const [orders, setOrders] = useState([])
   const [filter, setFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [updatingId, setUpdatingId] = useState(null)
+  // The order whose "Mark as No-Show" confirmation box is open.
+  const [confirmNoShowId, setConfirmNoShowId] = useState(null)
   const updating = useRef(false)
+  const isStaff = getUserRole() === 'cafeteria_staff'
 
   const loadOrders = useCallback(async (signal) => {
     setLoading(true)
@@ -87,9 +111,15 @@ export default function StaffOrderQueue({ onNavigate }) {
 
   useEffect(() => {
     const controller = new AbortController()
-    loadOrders(controller.signal)
 
-    return () => controller.abort()
+    const timeoutId = setTimeout(() => {
+      loadOrders(controller.signal)
+    }, 0)
+
+    return () => {
+      clearTimeout(timeoutId)
+      controller.abort()
+    }
   }, [loadOrders])
 
   async function handleStatusUpdate(order) {
@@ -99,6 +129,7 @@ export default function StaffOrderQueue({ onNavigate }) {
 
     updating.current = true
     setUpdatingId(order.order_id)
+    setConfirmNoShowId(null)
     setError('')
     setMessage('')
 
@@ -127,6 +158,51 @@ export default function StaffOrderQueue({ onNavigate }) {
       await loadOrders()
     } catch (requestError) {
       setError(requestError.message || 'Unable to update order status.')
+    } finally {
+      updating.current = false
+      setUpdatingId(null)
+    }
+  }
+
+  async function handleMarkNoShow(order) {
+    // The ref blocks a second click before React re-renders the button.
+    if (updating.current) return
+
+    updating.current = true
+    setUpdatingId(order.order_id)
+    setError('')
+    setMessage('')
+
+    try {
+      const token = localStorage.getItem('token')
+
+      const response = await fetch(
+        `http://localhost:3000/api/staff/orders/${order.order_id}/no-show`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      let data
+
+      try {
+        data = await response.json()
+      } catch {
+        data = null
+      }
+
+      if (!response.ok) {
+        throw new Error(data?.message || 'Unable to mark this order as a no-show.')
+      }
+
+      setConfirmNoShowId(null)
+      setMessage(`Queue #${order.queue_number}: ${data.message}`)
+      await loadOrders()
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to mark this order as a no-show.')
     } finally {
       updating.current = false
       setUpdatingId(null)
@@ -188,55 +264,152 @@ export default function StaffOrderQueue({ onNavigate }) {
 
       {!loading && !error && (
         <div className="staff-queue-list">
-          {visibleOrders.map((order) => (
-            <article className="staff-queue-card" key={order.order_id}>
-              <div className="staff-queue-card-header">
-                <div>
-                  <h2>Queue #{order.queue_number}</h2>
-                  <p>Order #{order.order_id}</p>
-                  <p>
-                    {order.order_date}
-                    {order.ordered_at && ` · ${order.ordered_at.slice(11, 16)}`}
-                  </p>
-                </div>
+          {visibleOrders.map((order) => {
+            const awaitingPickup = order.status === 'ready'
+            const overdue = awaitingPickup && order.can_mark_no_show
+            const confirming = confirmNoShowId === order.order_id
 
-                <span className={`staff-queue-status status-${order.status}`}>
-                  {statusLabels[order.status] || order.status}
-                </span>
-              </div>
+            let cardClass = 'staff-queue-card'
 
-              <div className="staff-queue-items">
-                {order.items.map((item, index) => (
-                  <div key={`${item.menu_item_id}-${index}`}>
-                    <span>{item.quantity} × {item.name}</span>
-                    <strong>{formatMoney(item.subtotal)}</strong>
+            if (overdue) {
+              cardClass += ' staff-queue-card--overdue'
+            } else if (awaitingPickup) {
+              cardClass += ' staff-queue-card--awaiting'
+            }
+
+            return (
+              <article className={cardClass} key={order.order_id}>
+                <div className="staff-queue-card-header">
+                  <div>
+                    <h2>Queue #{order.queue_number}</h2>
+                    <p>Order #{order.order_id}</p>
+                    <p>
+                      {order.order_date}
+                      {order.ordered_at && ` · ${formatTime(order.ordered_at)}`}
+                    </p>
                   </div>
-                ))}
-              </div>
 
-              <div className="staff-queue-card-footer">
-                <div>
-                  <span>Order total</span>
-                  <strong>{formatMoney(order.total_amount)}</strong>
+                  <span className={`staff-queue-status status-${order.status}`}>
+                    {statusLabels[order.status] || order.status}
+                  </span>
                 </div>
 
-                {nextStatus[order.status] ? (
-                  <Button
-                    onClick={() => handleStatusUpdate(order)}
-                    disabled={updatingId !== null}
-                  >
-                    {updatingId === order.order_id
-                      ? 'Updating...'
-                      : `Mark as ${statusLabels[nextStatus[order.status]]}`}
-                  </Button>
-                ) : (
-                  <span className="staff-queue-finished">
-                    No further action
-                  </span>
+                {awaitingPickup && order.pickup_deadline && (
+                  <div className={overdue ? 'staff-pickup-info staff-pickup-info--overdue' : 'staff-pickup-info'}>
+                    {overdue ? (
+                      <>
+                        <strong>Not collected</strong>
+                        <span>
+                          Pickup deadline was {formatTime(order.pickup_deadline)}. The grace period
+                          ended at {formatTime(order.no_show_after)}.
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <strong>Awaiting pickup</strong>
+                        <span>
+                          Collect by {formatTime(order.pickup_deadline)}. Can be marked as a
+                          no-show after {formatTime(order.no_show_after)}.
+                        </span>
+                      </>
+                    )}
+                  </div>
                 )}
-              </div>
-            </article>
-          ))}
+
+                {order.status === 'no_show' && (
+                  <div className="staff-penalty-info">
+                    <strong>Missed pickup recorded</strong>
+                    {order.no_show_recorded_at && (
+                      <span>Recorded {formatDateTime(order.no_show_recorded_at)}</span>
+                    )}
+                    {order.no_show_policy_result === 'restricted' && (
+                      <span>
+                        Customer is restricted from ordering
+                        {order.restriction_ends_at && ` until ${formatDateTime(order.restriction_ends_at)}`}.
+                      </span>
+                    )}
+                    {order.no_show_policy_result === 'warning' && (
+                      <span>
+                        Customer received a warning
+                        {order.no_show_offense_count && order.no_show_offense_threshold &&
+                          ` (${order.no_show_offense_count} of ${order.no_show_offense_threshold} missed pickups before a restriction)`}.
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                <div className="staff-queue-items">
+                  {order.items.map((item, index) => (
+                    <div key={`${item.menu_item_id}-${index}`}>
+                      <span>{item.quantity} × {item.name}</span>
+                      <strong>{formatMoney(item.subtotal)}</strong>
+                    </div>
+                  ))}
+                </div>
+
+                {confirming ? (
+                  <div className="staff-no-show-confirm" role="alertdialog" aria-labelledby={`no-show-title-${order.order_id}`}>
+                    <strong id={`no-show-title-${order.order_id}`}>
+                      Mark Queue #{order.queue_number} as a no-show?
+                    </strong>
+                    <p>
+                      This records a missed pickup for the customer and may restrict their
+                      ordering. It cannot be undone from this page.
+                    </p>
+                    <div className="staff-no-show-actions">
+                      <Button
+                        onClick={() => handleMarkNoShow(order)}
+                        disabled={updatingId !== null}
+                      >
+                        {updatingId === order.order_id ? 'Recording...' : 'Yes, mark as no-show'}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setConfirmNoShowId(null)}
+                        disabled={updatingId !== null}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="staff-queue-card-footer">
+                    <div>
+                      <span>Order total</span>
+                      <strong>{formatMoney(order.total_amount)}</strong>
+                    </div>
+
+                    <div className="staff-queue-actions">
+                      {isStaff && overdue && (
+                        <Button
+                          variant="secondary"
+                          onClick={() => setConfirmNoShowId(order.order_id)}
+                          disabled={updatingId !== null}
+                        >
+                          Mark as No-Show
+                        </Button>
+                      )}
+
+                      {nextStatus[order.status] ? (
+                        <Button
+                          onClick={() => handleStatusUpdate(order)}
+                          disabled={updatingId !== null}
+                        >
+                          {updatingId === order.order_id
+                            ? 'Updating...'
+                            : `Mark as ${statusLabels[nextStatus[order.status]]}`}
+                        </Button>
+                      ) : (
+                        <span className="staff-queue-finished">
+                          No further action
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </article>
+            )
+          })}
         </div>
       )}
     </main>

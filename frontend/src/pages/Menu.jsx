@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
-import MenuCard from '../components/menu/MenuCard'
+import MenuCard, { MenuCardSkeleton } from '../components/menu/MenuCard'
 import Button from '../components/ui/Button'
 import { Alert, Loading } from '../components/ui/Feedback'
+import { getBestSellerIds } from '../menuApi'
+import MealImage from '../components/menu/MealImage'
+import { formatMoney } from '../utils/orders'
 
 export default function Menu({ onAdd }) {
   const [items, setItems] = useState([])
@@ -11,11 +14,36 @@ export default function Menu({ onAdd }) {
   const [message, setMessage] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [availabilityFilter, setAvailabilityFilter] = useState('all')
+  // Empty until the backend answers, so no badge shows while loading.
+  const [bestSellerIds, setBestSellerIds] = useState([])
 
   const search = searchTerm.trim().toLowerCase()
   const filteredItems = items
     .filter((item) => item.name.toLowerCase().includes(search))
     .filter((item) => availabilityFilter === 'all' || item.is_available === true)
+
+  // Top picks = featured meals first, then best sellers. Only meals that
+  // can be ordered right now, and each meal only once.
+  const topPicks = []
+
+  for (const item of items) {
+    if (item.is_featured === true && item.is_available === true) {
+      topPicks.push(item)
+    }
+  }
+
+  for (const id of bestSellerIds) {
+    const item = items.find((meal) => meal.menu_item_id === id)
+
+    if (item && item.is_available === true && !topPicks.includes(item)) {
+      topPicks.push(item)
+    }
+  }
+
+  const shownPicks = topPicks.slice(0, 8)
+
+  // First load = nothing to show yet. Later refreshes keep the current cards on screen.
+  const firstLoad = loading && items.length === 0
 
   function handleAddItem(item) {
     if (item.is_available !== true) return
@@ -100,6 +128,27 @@ export default function Menu({ onAdd }) {
     return () => controller.abort()
   }, [reload])
 
+  // Best sellers load separately from the menu. If this request fails,
+  // the menu still works and simply shows no badges.
+  useEffect(() => {
+    const controller = new AbortController()
+
+    getBestSellerIds(controller.signal)
+      .then((ids) => {
+        if (!controller.signal.aborted) {
+          setBestSellerIds(ids)
+        }
+      })
+      .catch((requestError) => {
+        if (!controller.signal.aborted) {
+          console.error('Best sellers failed to load:', requestError.message)
+          setBestSellerIds([])
+        }
+      })
+
+    return () => controller.abort()
+  }, [reload])
+
   return (
     <main className="student-page">
       <div className="page-intro">
@@ -113,6 +162,33 @@ export default function Menu({ onAdd }) {
       </div>
 
       {message && <Alert>{message}</Alert>}
+
+      {!error && !search && shownPicks.length > 0 && (
+        <section className="top-picks" aria-labelledby="top-picks-heading">
+          <div className="top-picks-heading">
+            <h2 id="top-picks-heading">Top picks for you</h2>
+            <p>Featured meals and this month's best sellers.</p>
+          </div>
+
+          <ul className="top-picks-list">
+            {shownPicks.map((item) => (
+              <li key={item.menu_item_id} className="top-pick">
+                <MealImage src={item.image_url || ''} alt={`Photo of ${item.name}`} />
+                <span className="top-pick-tag">
+                  {item.is_featured === true ? '♥ Featured' : '★ Best Seller'}
+                </span>
+                <h3>{item.name}</h3>
+                <div className="top-pick-footer">
+                  <strong>{formatMoney(item.price)}</strong>
+                  <Button onClick={() => handleAddItem(item)} aria-label={`Add ${item.name} to cart`}>
+                    Add
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {!error && items.length > 0 && (
         <div className="menu-search">
@@ -146,7 +222,18 @@ export default function Menu({ onAdd }) {
         </div>
       )}
 
-      {loading && <Loading>Loading the menu...</Loading>}
+      {firstLoad && (
+        <>
+          <Loading>Loading the menu...</Loading>
+          <div className="menu-grid" aria-busy="true">
+            {[1, 2, 3, 4, 5, 6].map((number) => (
+              <MenuCardSkeleton key={number} />
+            ))}
+          </div>
+        </>
+      )}
+
+      {loading && !firstLoad && <Loading>Refreshing the menu...</Loading>}
 
       {!loading && error && (
         <Alert error>
@@ -164,7 +251,7 @@ export default function Menu({ onAdd }) {
         </div>
       )}
 
-      {!loading && !error && items.length > 0 && filteredItems.length === 0 && (
+      {!firstLoad && !error && items.length > 0 && filteredItems.length === 0 && (
         <div className="student-empty">
           <h2>No meals found</h2>
           <p>
@@ -187,13 +274,14 @@ export default function Menu({ onAdd }) {
         </div>
       )}
 
-      {!loading && !error && filteredItems.length > 0 && (
+      {!firstLoad && !error && filteredItems.length > 0 && (
         <div className="menu-grid">
           {filteredItems.map((item) => (
             <MenuCard
               key={item.menu_item_id}
               item={item}
               onAdd={handleAddItem}
+              isBestSeller={bestSellerIds.includes(item.menu_item_id)}
             />
           ))}
         </div>

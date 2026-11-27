@@ -4,6 +4,8 @@ const {
   authenticateToken,
   requireRole,
 } = require('../middleware/authMiddleware')
+const { markOrderNoShow, getPenaltySummary } = require('../services/noShow')
+const { isValidPeriod, getSalesStats } = require('../services/salesStats')
 
 const router = express.Router()
 
@@ -13,9 +15,10 @@ const transitions = {
   ready: 'picked_up',
 }
 
-router.use(authenticateToken, requireRole('cafeteria_staff'))
+router.use(authenticateToken)
 
-router.get('/orders', async (req, res) => {
+// Super admins can view the staff dashboard, but only staff update orders.
+router.get('/orders', requireRole('cafeteria_staff', 'super_admin'), async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
@@ -25,6 +28,25 @@ router.get('/orders', async (req, res) => {
         TO_CHAR(o.ordered_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ordered_at,
         o.status,
         o.total_amount,
+        'paid' AS payment_status,
+        TO_CHAR(o.ready_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS ready_at,
+        CASE WHEN o.status = 'ready' THEN
+          TO_CHAR(COALESCE(o.ready_at, o.updated_at) + make_interval(mins => policy.pickup_window_minutes), 'YYYY-MM-DD"T"HH24:MI:SS')
+        END AS pickup_deadline,
+        CASE WHEN o.status = 'ready' THEN
+          TO_CHAR(COALESCE(o.ready_at, o.updated_at) + make_interval(mins => policy.pickup_window_minutes + policy.grace_period_minutes), 'YYYY-MM-DD"T"HH24:MI:SS')
+        END AS no_show_after,
+        COALESCE(
+          o.status = 'ready' AND CURRENT_TIMESTAMP >= COALESCE(o.ready_at, o.updated_at) + make_interval(mins => policy.pickup_window_minutes + policy.grace_period_minutes),
+          false
+        ) AS can_mark_no_show,
+        -- No-show outcome, only for orders marked no-show. No customer
+        -- names or contact details are sent, only the penalty result.
+        TO_CHAR(ns.recorded_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS no_show_recorded_at,
+        ns.offense_count AS no_show_offense_count,
+        policy.offense_threshold AS no_show_offense_threshold,
+        ns.policy_result AS no_show_policy_result,
+        TO_CHAR(cr.ends_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS restriction_ends_at,
         COALESCE((
           SELECT json_agg(
             json_build_object(
@@ -42,6 +64,13 @@ router.get('/orders', async (req, res) => {
           WHERE oi.order_id = o.order_id
         ), '[]'::json) AS items
       FROM orders o
+      LEFT JOIN no_show_policy policy ON policy.policy_id = 1
+      LEFT JOIN no_show_records ns ON ns.order_id = o.order_id
+      LEFT JOIN customer_restrictions cr ON cr.no_show_id = ns.no_show_id
+      WHERE EXISTS (
+        SELECT 1 FROM payments p 
+        WHERE p.order_id = o.order_id AND p.status = 'paid'
+      )
       ORDER BY o.order_date DESC, o.queue_number ASC
     `)
 
@@ -55,7 +84,7 @@ router.get('/orders', async (req, res) => {
   }
 })
 
-router.patch('/orders/:id/status', async (req, res) => {
+router.patch('/orders/:id/status', requireRole('cafeteria_staff'), async (req, res) => {
   const orderId = Number(req.params.id)
 
   if (
@@ -85,7 +114,11 @@ router.patch('/orders/:id/status', async (req, res) => {
 
   try {
     const existing = await pool.query(
-      'SELECT status FROM orders WHERE order_id = $1',
+      `SELECT o.status, p.status AS payment_status
+       FROM orders o
+       LEFT JOIN payments p ON p.order_id = o.order_id AND p.status = 'paid'
+       WHERE o.order_id = $1
+       LIMIT 1`,
       [orderId]
     )
 
@@ -96,6 +129,13 @@ router.patch('/orders/:id/status', async (req, res) => {
     }
 
     const currentStatus = existing.rows[0].status
+    const paymentStatus = existing.rows[0].payment_status
+
+    if (paymentStatus !== 'paid') {
+      return res.status(409).json({
+        message: 'Cannot update status. Payment has not been confirmed.',
+      })
+    }
 
     if (transitions[currentStatus] !== body.status) {
       return res.status(409).json({
@@ -106,7 +146,8 @@ router.patch('/orders/:id/status', async (req, res) => {
     const updated = await pool.query(
       `UPDATE orders
        SET status = $1,
-           updated_at = CURRENT_TIMESTAMP
+           updated_at = CURRENT_TIMESTAMP,
+           ready_at = CASE WHEN $1::varchar = 'ready' THEN CURRENT_TIMESTAMP ELSE ready_at END
        WHERE order_id = $2
          AND status = $3
        RETURNING
@@ -133,6 +174,149 @@ router.patch('/orders/:id/status', async (req, res) => {
 
     return res.status(500).json({
       message: 'Unable to update order status.',
+    })
+  }
+})
+
+function isValidId(text) {
+  const id = Number(text)
+
+  return /^[1-9]\d*$/.test(text) && Number.isSafeInteger(id) && id <= 2147483647
+}
+
+// Staff marks a ready order as not collected. Only cafeteria staff can do this.
+// The backend checks the deadline and grace period itself.
+router.post('/orders/:id/no-show', requireRole('cafeteria_staff'), async (req, res) => {
+  if (!isValidId(req.params.id)) {
+    return res.status(400).json({
+      message: 'Invalid order ID.',
+    })
+  }
+
+  // This action takes no input. Reject anything extra that was sent.
+  const body = req.body
+
+  if (
+    body !== undefined &&
+    (body === null || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).length > 0)
+  ) {
+    return res.status(400).json({
+      message: 'This request does not accept a body.',
+    })
+  }
+
+  const orderId = Number(req.params.id)
+  let client
+
+  try {
+    client = await pool.connect()
+    await client.query('BEGIN')
+
+    const result = await markOrderNoShow(client, orderId, req.user.user_id)
+
+    if (result.error) {
+      await client.query('ROLLBACK')
+
+      const response = { message: result.error.message }
+
+      if (result.error.no_show_after) {
+        response.no_show_after = result.error.no_show_after
+      }
+
+      return res.status(result.error.status).json(response)
+    }
+
+    await client.query('COMMIT')
+
+    let message = 'Order marked as a no-show. A warning was recorded for the customer.'
+
+    if (result.restriction) {
+      message = 'Order marked as a no-show. The customer is temporarily restricted from ordering.'
+    }
+
+    return res.json({
+      message,
+      order: result.order,
+      no_show: result.no_show,
+      restriction: result.restriction,
+    })
+  } catch (error) {
+    if (client) {
+      try {
+        await client.query('ROLLBACK')
+      } catch (rollbackError) {
+        console.error('No-show rollback failed:', rollbackError.message)
+      }
+    }
+
+    console.error('Mark no-show failed:', error.message)
+
+    return res.status(500).json({
+      message: 'Unable to mark this order as a no-show.',
+    })
+  } finally {
+    if (client) {
+      client.release()
+    }
+  }
+})
+
+// Staff and super admins can look up one customer's no-show history.
+router.get('/customers/:id/no-shows', requireRole('cafeteria_staff', 'super_admin'), async (req, res) => {
+  if (!isValidId(req.params.id)) {
+    return res.status(400).json({
+      message: 'Invalid customer ID.',
+    })
+  }
+
+  const customerId = Number(req.params.id)
+
+  try {
+    const customer = await pool.query(
+      "SELECT user_id FROM users WHERE user_id = $1 AND role = 'student'",
+      [customerId]
+    )
+
+    if (customer.rows.length === 0) {
+      return res.status(404).json({
+        message: 'Customer not found.',
+      })
+    }
+
+    const summary = await getPenaltySummary(pool, customerId)
+
+    return res.json({
+      customer_id: customerId,
+      ...summary,
+    })
+  } catch (error) {
+    console.error('Customer no-show history failed:', error.message)
+
+    return res.status(500).json({
+      message: 'Unable to load no-show history.',
+    })
+  }
+})
+
+// GET /api/staff/stats?period=day|week|month|year
+// Sales numbers, trend and top meals. Staff and super admins can view it.
+router.get('/stats', requireRole('cafeteria_staff', 'super_admin'), async (req, res) => {
+  const period = req.query.period || 'day'
+
+  if (!isValidPeriod(period)) {
+    return res.status(400).json({
+      message: 'Period must be day, week, month or year.',
+    })
+  }
+
+  try {
+    const stats = await getSalesStats(pool, period)
+    return res.json(stats)
+  } catch (error) {
+    console.error('Sales stats failed:', error.message)
+
+    return res.status(500).json({
+      message: 'Unable to load sales statistics.',
     })
   }
 })

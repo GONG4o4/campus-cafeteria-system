@@ -1,0 +1,272 @@
+/* Feedback page (customers) and feedback inbox (staff / admin) */
+.feedback-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 28px;
+}
+
+.feedback-form-card,
+.feedback-history {
+  padding: 28px;
+  border: 1px solid #e9dcc3;
+  border-radius: 18px;
+  background: #fffcf5;
+}
+
+.feedback-history h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+
+.feedback-type {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 14px;
+  background: #f6ecd8;
+}
+
+.feedback-type button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #6f5f5a;
+  font-weight: 700;
+}
+
+.feedback-type button[aria-pressed='true'] {
+  background: #a51c30;
+  color: #fff;
+}
+
+.feedback-hint {
+  margin: 12px 0 20px;
+  color: #6f5f5a;
+  font-size: 14px;
+}
+
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 18px;
+}
+
+.feedback-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.feedback-field label,
+.feedback-rating legend {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.feedback-field input,
+.feedback-field textarea,
+.feedback-status-filter select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e0d0b4;
+  border-radius: 12px;
+  background: #fffcf5;
+  color: #2e1a1c;
+  font: inherit;
+  font-size: 15px;
+}
+
+.feedback-field textarea {
+  resize: vertical;
+}
+
+.feedback-field input:focus-visible,
+.feedback-field textarea:focus-visible,
+.feedback-status-filter select:focus-visible {
+  outline: 2px solid #a51c30;
+  outline-offset: 1px;
+}
+
+.feedback-count {
+  align-self: flex-end;
+  color: #8a7a74;
+  font-size: 12px;
+}
+
+.feedback-rating {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.feedback-rating div {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.feedback-star {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #d8c7a8;
+  font-size: 30px;
+  line-height: 1;
+  transition: transform 0.15s, color 0.15s;
+}
+
+.feedback-star:hover {
+  transform: scale(1.15);
+}
+
+.feedback-star--on {
+  color: #e0a100;
+}
+
+.feedback-empty {
+  color: #6f5f5a;
+  font-size: 14px;
+}
+
+.feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feedback-list--inbox {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  gap: 16px;
+}
+
+.feedback-item {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  border: 1px solid #e9dcc3;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.feedback-list--inbox .feedback-item {
+  padding: 20px;
+}
+
+.feedback-item h3 {
+  margin: 10px 0 4px;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.feedback-item p {
+  margin: 4px 0 10px;
+  color: #4a3f3b;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.feedback-item small {
+  color: #8a7a74;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.feedback-item .feedback-stars {
+  margin: 0;
+  color: #e0a100;
+  letter-spacing: 2px;
+}
+
+.feedback-item-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.feedback-tag,
+.feedback-status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.feedback-tag {
+  background: #fff2d6;
+  color: #8a5900;
+}
+
+.feedback-tag--report {
+  background: #fbe8ea;
+  color: #a51c30;
+}
+
+.feedback-status {
+  background: #f6ecd8;
+  color: #6f5f5a;
+}
+
+.feedback-status--done {
+  background: #e4f5e8;
+  color: #216a34;
+}
+
+.feedback-item-actions {
+  margin-top: 14px;
+}
+
+.feedback-summary {
+  margin-bottom: 24px;
+}
+
+.feedback-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.feedback-status-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.feedback-status-filter select {
+  width: auto;
+  padding: 10px 12px;
+}
+
+@media (max-width: 1000px) {
+  .feedback-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .feedback-form-card,
+  .feedback-history {
+    padding: 20px;
+  }
+
+  .feedback-form .app-button {
+    width: 100%;
+  }
+}

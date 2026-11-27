@@ -1,5 +1,8 @@
 import Button from './ui/Button'
 
+// Customer layout.
+// Computer / tablet: maroon sidebar on the left.
+// Phone: small top bar + a tab bar fixed to the bottom of the screen.
 export default function CafeteriaLayout({
   page,
   itemCount,
@@ -8,10 +11,11 @@ export default function CafeteriaLayout({
   authenticated = true,
 }) {
   const links = [
-    { page: 'landing', path: '/', label: 'Home' },
-    { page: 'menu', label: 'Menu' },
-    { page: 'cart', label: `Cart (${itemCount})` },
-    { page: 'orders', label: 'Order history' },
+    { page: 'landing', path: '/', label: 'Home', icon: '🏠' },
+    { page: 'menu', label: 'Menu', icon: '🍽️' },
+    { page: 'cart', label: 'Cart', icon: '🛒', count: itemCount },
+    { page: 'orders', label: 'Orders', longLabel: 'Order history', icon: '🧾' },
+    { page: 'feedback', label: 'Feedback', longLabel: 'Feedback', icon: '💬' },
   ]
 
   function handleLinkClick(event, nextPage) {
@@ -20,7 +24,7 @@ export default function CafeteriaLayout({
   }
 
   return (
-    <div className="cafeteria-layout">
+    <div className="cafeteria-layout customer-layout">
       <aside className="cafeteria-sidebar">
         <a
           className="cafeteria-brand"
@@ -30,7 +34,7 @@ export default function CafeteriaLayout({
           Que<span>u</span>
         </a>
 
-        <nav aria-label="Cafeteria">
+        <nav className="customer-nav" aria-label="Cafeteria">
           {links.map((link) => {
             let isActive = page === link.page
 
@@ -46,7 +50,16 @@ export default function CafeteriaLayout({
                 aria-current={isActive ? 'page' : undefined}
                 onClick={(event) => handleLinkClick(event, link.page)}
               >
-                {link.label}
+                <span className="sidebar-icon" aria-hidden="true">{link.icon}</span>
+                <span className="sidebar-label">
+                  <span className="sidebar-label-long">{link.longLabel || link.label}</span>
+                  <span className="sidebar-label-short">{link.label}</span>
+                </span>
+                {link.count > 0 && (
+                  <span className="sidebar-count" aria-label={`${link.count} items`}>
+                    {link.count}
+                  </span>
+                )}
               </a>
             )
           })}

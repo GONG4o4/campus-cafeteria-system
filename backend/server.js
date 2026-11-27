@@ -1,3 +1,10 @@
+process.on('unhandledRejection', (reason) => {
+    console.error('UNHANDLED REJECTION:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('UNCAUGHT EXCEPTION:', err);
+});
+
 const express = require("express");
 const cors = require("cors");
 const pool = require("./db");
@@ -6,9 +13,12 @@ require("dotenv").config();
 const auth = require("./routes/auth");
 const authTest = require("./routes/authTest");
 const menu = require("./routes/menu");
-const orders = require("./routes/orders")
-const staffOrders = require("./routes/staffOrders")
-const staffAnalytics = require("./routes/staffAnalytics")
+const orders = require("./routes/orders");
+const staffOrders = require("./routes/staffOrders");
+const staffAnalytics = require("./routes/staffAnalytics");
+const payments = require("./routes/payments");
+const admin = require("./routes/admin");
+const feedback = require("./routes/feedback");
 
 const {
     authenticateToken,
@@ -16,14 +26,16 @@ const {
 } = require("./middleware/authMiddleware");
 
 const app = express();
+
 app.use(cors({
   origin: "http://localhost:5173",
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-app.use(express.json());
+app.use("/api/payments", express.raw({ type: "application/json" }), payments);
 
+app.use(express.json());
 
 app.use("/api/auth", auth);
 app.use("/api/auth", authTest);
@@ -31,6 +43,8 @@ app.use("/api/menu", menu);
 app.use("/api/orders", orders);
 app.use("/api/staff", staffOrders);
 app.use("/api/staff", staffAnalytics);
+app.use("/api/admin", admin); // Added from main branch
+app.use("/api/feedback", feedback);
 
 app.get("/api/health", (req, res) => {
     res.json({ message: "Backend is working" });
