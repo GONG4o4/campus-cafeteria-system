@@ -136,7 +136,7 @@ export default function StaffDashboard({ onNavigate, showTasks = true }) {
           variant="secondary"
           onClick={() => {
             loadOrders()
-            setRefreshKey(refreshKey + 1)
+            setRefreshKey((key) => key + 1)
           }}
         >
           Refresh dashboard

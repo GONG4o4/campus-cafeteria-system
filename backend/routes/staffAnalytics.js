@@ -9,6 +9,14 @@ const router = express.Router()
 
 const statusList = ['pending', 'preparing', 'ready', 'picked_up', 'cancelled', 'no_show']
 
+// Orders are saved before HitPay confirms the payment. Like the staff
+// order queue, only count orders that have a paid payment, so abandoned
+// checkouts are not shown as pending orders or added to the order value.
+const paidOrder = `EXISTS (
+  SELECT 1 FROM payments p
+  WHERE p.order_id = o.order_id AND p.status = 'paid'
+)`
+
 // Same business date rule as the queue: the date in Asia/Manila.
 function getTodayInManila() {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -46,6 +54,7 @@ function isValidDate(value) {
   GET /api/staff/analytics?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 
   Rules:
+  - Only paid orders are counted (same rule as GET /api/staff/orders).
   - Dates use orders.order_date, the Asia/Manila business date.
   - Both start and end dates are included.
   - Cancelled orders are left out of order value, average order value,
@@ -88,16 +97,18 @@ router.get(
                / NULLIF(COUNT(*) FILTER (WHERE status <> 'cancelled'), 0),
              0
            )::numeric(12,2)::text AS average_order_value
-         FROM orders
-         WHERE order_date BETWEEN $1::date AND $2::date`,
+         FROM orders o
+         WHERE o.order_date BETWEEN $1::date AND $2::date
+           AND ${paidOrder}`,
         dates
       )
 
       const statusResult = await pool.query(
-        `SELECT status, COUNT(*)::int AS count
-         FROM orders
-         WHERE order_date BETWEEN $1::date AND $2::date
-         GROUP BY status`,
+        `SELECT o.status, COUNT(*)::int AS count
+         FROM orders o
+         WHERE o.order_date BETWEEN $1::date AND $2::date
+           AND ${paidOrder}
+         GROUP BY o.status`,
         dates
       )
 
@@ -114,6 +125,7 @@ router.get(
          JOIN menu_items mi ON mi.menu_item_id = oi.menu_item_id
          WHERE o.order_date BETWEEN $1::date AND $2::date
            AND o.status <> 'cancelled'
+           AND ${paidOrder}
          GROUP BY mi.menu_item_id, mi.name
          ORDER BY total_quantity DESC, mi.name ASC
          LIMIT 5`,
@@ -124,10 +136,11 @@ router.get(
       // so convert it to Asia/Manila before taking the hour.
       const hourResult = await pool.query(
         `SELECT
-           EXTRACT(HOUR FROM (ordered_at AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'Asia/Manila')::int AS hour,
+           EXTRACT(HOUR FROM (o.ordered_at AT TIME ZONE current_setting('TimeZone')) AT TIME ZONE 'Asia/Manila')::int AS hour,
            COUNT(*)::int AS count
-         FROM orders
-         WHERE order_date BETWEEN $1::date AND $2::date
+         FROM orders o
+         WHERE o.order_date BETWEEN $1::date AND $2::date
+           AND ${paidOrder}
          GROUP BY hour
          ORDER BY hour`,
         dates
