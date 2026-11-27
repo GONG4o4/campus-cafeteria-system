@@ -92,14 +92,3 @@ work.
 (1 hour). A deactivated student or staff member is blocked from logging in
 again and from the admin API right away, but an already-issued token keeps
 working on those routes until it expires.
-
-## Tests
-
-```powershell
-cd backend
-npm test
-```
-
-`backend/test/admin.test.js` covers allowed and forbidden access for every
-role, validation errors, password confirmation, the self-change rules, the last
-super admin rule, and audit logging.

@@ -15,6 +15,8 @@ import StaffDashboard from './pages/StaffDashboard.jsx'
 import StaffOrderQueue from './pages/StaffOrderQueue.jsx'
 import StaffMenu from './pages/StaffMenu.jsx'
 import StaffDailySummary from './pages/StaffDailySummary.jsx'
+import Feedback from './pages/Feedback.jsx'
+import FeedbackInbox from './pages/FeedbackInbox.jsx'
 
 // New Admin Imports from main branch
 import AdminNavigation from './components/AdminNavigation.jsx'
@@ -32,7 +34,7 @@ import './student.css'
 import './pages/StaffDashboard.css'
 import './pages/AdminDashboard.css'
 
-const protectedPaths = ['/home', '/cart', '/checkout', '/orders', '/payment/success', '/payment/cancelled', '/admin', '/staff']
+const protectedPaths = ['/home', '/cart', '/checkout', '/orders', '/feedback', '/payment/success', '/payment/cancelled', '/admin', '/staff']
 
 function isConfirmationPath(path) {
   return /^\/order-confirmation\/[1-9]\d*$/.test(path)
@@ -54,6 +56,21 @@ function isAdminRole(role) {
   return role === 'admin' || role === 'super_admin'
 }
 
+const studentPages = [
+  'menu', 'cart', 'checkout', 'orders', 'feedback', 'confirmation', 'payment-success', 'payment-cancelled',
+]
+
+// The landing page is not checked against the backend, so use the saved user.
+function getSavedUser() {
+  if (!localStorage.getItem('token')) return null
+
+  try {
+    return JSON.parse(localStorage.getItem('user'))
+  } catch {
+    return null
+  }
+}
+
 function getAllowedPage(page, user) {
   if (page.startsWith('staff-') && user?.role !== 'cafeteria_staff') {
     return 'menu'
@@ -65,14 +82,14 @@ function getAllowedPage(page, user) {
 
   if (
     user?.role === 'cafeteria_staff' &&
-    ['menu', 'cart', 'checkout', 'orders', 'confirmation', 'payment-success', 'payment-cancelled'].includes(page)
+    studentPages.includes(page)
   ) {
     return 'staff-dashboard'
   }
 
   if (
     isAdminRole(user?.role) &&
-    ['menu', 'cart', 'checkout', 'orders', 'confirmation', 'payment-success', 'payment-cancelled'].includes(page)
+    studentPages.includes(page)
   ) {
     return 'admin-overview'
   }
@@ -100,6 +117,7 @@ const pages = {
   '/cart': 'cart',
   '/checkout': 'checkout',
   '/orders': 'orders',
+  '/feedback': 'feedback',
   '/register': 'register',
   '/payment/success': 'payment-success',
   '/payment/cancelled': 'payment-cancelled',
@@ -108,12 +126,14 @@ const pages = {
   '/staff/orders': 'staff-orders',
   '/staff/menu': 'staff-menu',
   '/staff/summary': 'staff-summary',
+  '/staff/feedback': 'staff-feedback',
   '/admin': 'admin-overview',
   '/admin/users': 'admin-users',
   '/admin/staff': 'admin-staff',
   '/admin/reports': 'admin-reports',
   '/admin/settings': 'admin-settings',
   '/admin/logs': 'admin-logs',
+  '/admin/feedback': 'admin-feedback',
 }
 
 const paths = {
@@ -121,6 +141,7 @@ const paths = {
   login: '/login',
   register: '/register',
   orders: '/orders',
+  feedback: '/feedback',
   menu: '/menu',
   cart: '/cart',
   checkout: '/checkout',
@@ -130,12 +151,14 @@ const paths = {
   'staff-orders': '/staff/orders',
   'staff-menu': '/staff/menu',
   'staff-summary': '/staff/summary',
+  'staff-feedback': '/staff/feedback',
   'admin-overview': '/admin',
   'admin-users': '/admin/users',
   'admin-staff': '/admin/staff',
   'admin-reports': '/admin/reports',
   'admin-settings': '/admin/settings',
   'admin-logs': '/admin/logs',
+  'admin-feedback': '/admin/feedback',
 }
 
 function App() {
@@ -152,6 +175,9 @@ function App() {
 
   const [sessionUser, setSessionUser] = useState(null)
   const [sessionError, setSessionError] = useState('')
+  // Shown on the login page right after signing up.
+  const [loginNotice, setLoginNotice] = useState('')
+  const [loginEmail, setLoginEmail] = useState('')
 
   const [page, setPage] = useState(() => {
     const path = window.location.pathname
@@ -245,13 +271,18 @@ function App() {
       else nextPage = 'menu'
     }
 
-    const needsLogin = ['cart', 'checkout', 'orders', 'payment-success', 'payment-cancelled'].includes(nextPage) || nextPage.startsWith('staff-') || nextPage.startsWith('admin-')
+    const needsLogin = ['cart', 'checkout', 'orders', 'feedback', 'payment-success', 'payment-cancelled'].includes(nextPage) || nextPage.startsWith('staff-') || nextPage.startsWith('admin-')
 
     if (needsLogin && !localStorage.getItem('token')) {
       nextPage = 'login'
     }
 
     nextPage = getAllowedPage(nextPage, user)
+
+    if (nextPage !== 'login') {
+      setLoginNotice('')
+      setLoginEmail('')
+    }
 
     if (nextPage === 'login') {
       clearCart()
@@ -278,8 +309,25 @@ function App() {
     return <main style={{ padding: '2rem' }}>Checking your session...</main>
   }
 
-  if (page === 'register') return <Register onNavigate={handleNavigate} />
-  if (page === 'landing') return <LandingPage onNavigate={handleNavigate} />
+  function handleRegistered(email) {
+    handleNavigate('login')
+    setLoginEmail(email)
+    setLoginNotice('Account created! Sign in with your new account.')
+  }
+
+  if (page === 'register') {
+    return <Register onNavigate={handleNavigate} onRegistered={handleRegistered} />
+  }
+
+  if (page === 'landing') {
+    return (
+      <LandingPage
+        onNavigate={handleNavigate}
+        user={sessionUser || getSavedUser()}
+        itemCount={itemCount}
+      />
+    )
+  }
 
   if (page.startsWith('admin-') && isAdminRole(sessionUser?.role)) {
     return (
@@ -290,6 +338,7 @@ function App() {
         {page === 'admin-reports' && <AdminReports />}
         {page === 'admin-settings' && <AdminSettings />}
         {page === 'admin-logs' && <AdminAuditLogs />}
+        {page === 'admin-feedback' && <FeedbackInbox />}
       </AdminNavigation>
     )
   }
@@ -300,17 +349,22 @@ function App() {
         {page === 'staff-dashboard' && <StaffDashboard onNavigate={handleNavigate} />}
         {page === 'staff-orders' && <StaffOrderQueue />}
         {page === 'staff-menu' && <StaffMenu />}
-        {page === 'staff-summary' && <StaffDailySummary onNavigate={handleNavigate} />}
+        {page === 'staff-summary' && <StaffDailySummary />}
+        {page === 'staff-feedback' && <FeedbackInbox />}
       </StaffNavigation>
     )
   }
 
-  const isStudentPage = [
-    'menu', 'cart', 'checkout', 'orders', 'confirmation', 'payment-success', 'payment-cancelled',
-  ].includes(page)
-
-  if (!isStudentPage) {
-    return <Login onNavigate={handleNavigate} sessionError={sessionError} />
+  if (!studentPages.includes(page)) {
+    return (
+      <Login
+        key={loginEmail}
+        onNavigate={handleNavigate}
+        sessionError={sessionError}
+        notice={loginNotice}
+        initialEmail={loginEmail}
+      />
+    )
   }
 
   const confirmationId = Number(window.location.pathname.split('/').pop())
@@ -342,6 +396,7 @@ function App() {
         />
       )}
       {page === 'orders' && <OrderHistory />}
+      {page === 'feedback' && <Feedback />}
       {page === 'confirmation' && (
         <OrderConfirmation
           key={confirmationId}

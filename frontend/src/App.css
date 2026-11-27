@@ -1,5 +1,5 @@
 body {
-  font-family: 'DM Sans', Arial, sans-serif;
+  font-family: 'Open Sans', Arial, sans-serif;
   color: #2e1a1c;
   background: #fffcf5;
   font-synthesis: none;
@@ -15,8 +15,8 @@ body {
 
 h1,
 h2 {
-  font-family: 'Playfair Display', Georgia, serif;
-  font-weight: 500;
+  font-family: 'Open Sans', Arial, sans-serif;
+  font-weight: 700;
 }
 button,
 a,

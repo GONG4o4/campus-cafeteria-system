@@ -252,6 +252,55 @@ router.put("/:id", authenticateToken, requireRole("cafeteria_staff", "super_admi
     }
 });
 
+// Staff choose which meals show up as "Featured" on the menu and home page.
+// Body: { "is_featured": true } or { "is_featured": false }
+router.patch("/:id/featured", authenticateToken, requireRole("cafeteria_staff", "super_admin"), async (req, res) => {
+    const id = parseMenuId(req.params.id);
+
+    if (id === null) {
+        return res.status(400).json({
+            message: "Invalid menu item ID"
+        });
+    }
+
+    const isFeatured = req.body ? req.body.is_featured : undefined;
+
+    if (typeof isFeatured !== "boolean") {
+        return res.status(400).json({
+            message: "is_featured must be true or false"
+        });
+    }
+
+    try {
+        const result = await pool.query(
+            `UPDATE menu_items
+             SET is_featured = $1,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE menu_item_id = $2
+             RETURNING *`,
+            [isFeatured, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                message: "Menu item not found"
+            });
+        }
+
+        return res.status(200).json({
+            message: isFeatured ? "Meal is now featured" : "Meal is no longer featured",
+            item: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error("Failed to update featured meal:", error.message);
+
+        return res.status(500).json({
+            message: "Failed to update featured meal"
+        });
+    }
+});
+
 router.delete("/:id", authenticateToken, requireRole("cafeteria_staff", "super_admin"), async (req, res) => {
     const id = parseMenuId(req.params.id);
 

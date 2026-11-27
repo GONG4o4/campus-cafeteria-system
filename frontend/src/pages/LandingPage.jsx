@@ -1,3 +1,6 @@
+import { useEffect, useState } from 'react'
+import MealImage from '../components/menu/MealImage'
+import { formatMoney } from '../utils/orders'
 import './LandingPage.css'
 
 const heroPoints = [
@@ -52,7 +55,106 @@ const footerLinks = [
   { label: 'Sign up', page: 'register', path: '/register' },
 ]
 
-export default function LandingPage({ onNavigate }) {
+// Loads featured meals and best sellers for the "Top picks" section.
+// The menu and best seller lists are public, so no login is needed.
+function useTopPicks() {
+  const [picks, setPicks] = useState([])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function load() {
+      try {
+        const menuResponse = await fetch('http://localhost:3000/api/menu', { signal: controller.signal })
+        const menu = await menuResponse.json()
+
+        let bestIds = []
+
+        try {
+          const bestResponse = await fetch('http://localhost:3000/api/menu/best-sellers', { signal: controller.signal })
+          const best = await bestResponse.json()
+          bestIds = best.items.map((item) => item.menu_item_id)
+        } catch {
+          bestIds = []
+        }
+
+        if (!Array.isArray(menu)) return
+
+        const result = []
+
+        for (const item of menu) {
+          if (item.is_featured === true && item.is_available) {
+            result.push({ ...item, tag: 'Featured' })
+          }
+        }
+
+        for (const id of bestIds) {
+          const item = menu.find((meal) => meal.menu_item_id === id)
+          const alreadyAdded = result.some((meal) => meal.menu_item_id === id)
+
+          if (item && item.is_available && !alreadyAdded) {
+            result.push({ ...item, tag: 'Best Seller' })
+          }
+        }
+
+        // Nothing featured or sold yet: show the first available meals.
+        if (result.length === 0) {
+          for (const item of menu) {
+            if (item.is_available && result.length < 4) {
+              result.push({ ...item, tag: 'On the menu' })
+            }
+          }
+        }
+
+        if (!controller.signal.aborted) {
+          setPicks(result.slice(0, 4))
+        }
+      } catch {
+        // The backend is not running: the section just stays hidden.
+      }
+    }
+
+    load()
+    return () => controller.abort()
+  }, [])
+
+  return picks
+}
+
+// Adds the "is-visible" class to .reveal elements when they scroll into view,
+// which starts their fade-up animation (see LandingPage.css).
+function useRevealOnScroll(watch) {
+  useEffect(() => {
+    const elements = document.querySelectorAll('.reveal:not(.is-visible)')
+
+    if (!('IntersectionObserver' in window)) {
+      elements.forEach((element) => element.classList.add('is-visible'))
+      return
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible')
+          observer.unobserve(entry.target)
+        }
+      })
+    }, { threshold: 0.15 })
+
+    elements.forEach((element) => observer.observe(element))
+
+    return () => observer.disconnect()
+  }, [watch])
+}
+
+export default function LandingPage({ onNavigate, user = null, itemCount = 0 }) {
+  const topPicks = useTopPicks()
+  // Run again when Top picks appear, so that new section also animates.
+  useRevealOnScroll(topPicks.length)
+
+  const loggedIn = Boolean(user)
+  const isStaff = user?.role === 'cafeteria_staff' || user?.role === 'super_admin' || user?.role === 'admin'
+
   function handleLinkClick(event, page) {
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
       return
@@ -100,21 +202,65 @@ export default function LandingPage({ onNavigate }) {
           >
             Menu
           </a>
-          <a
-            href="/login"
-            onClick={(event) => handleLinkClick(event, 'login')}
-          >
-            Log in
-          </a>
+          {loggedIn && !isStaff && (
+            <>
+              <a href="/orders" onClick={(event) => handleLinkClick(event, 'orders')}>
+                My orders
+              </a>
+              <a href="/feedback" onClick={(event) => handleLinkClick(event, 'feedback')}>
+                Feedback
+              </a>
+            </>
+          )}
+          {loggedIn && isStaff && (
+            <a href="/staff" onClick={(event) => handleLinkClick(event, 'home')}>
+              Dashboard
+            </a>
+          )}
+          {!loggedIn && (
+            <a
+              href="/login"
+              onClick={(event) => handleLinkClick(event, 'login')}
+            >
+              Log in
+            </a>
+          )}
         </nav>
 
-        <a
-          className="landing-pill"
-          href="/register"
-          onClick={(event) => handleLinkClick(event, 'register')}
-        >
-          Sign up <span aria-hidden="true">→</span>
-        </a>
+        {!loggedIn && (
+          <a
+            className="landing-pill"
+            href="/register"
+            onClick={(event) => handleLinkClick(event, 'register')}
+          >
+            Sign up <span aria-hidden="true">→</span>
+          </a>
+        )}
+
+        {loggedIn && (
+          <div className="landing-user">
+            <span className="landing-user-name">
+              Hi, <strong>{user.fname || 'there'}</strong>
+            </span>
+            {!isStaff && (
+              <a
+                className="landing-cart"
+                href="/cart"
+                onClick={(event) => handleLinkClick(event, 'cart')}
+              >
+                <span aria-hidden="true">🛒</span> Cart
+                {itemCount > 0 && <span className="landing-cart-count">{itemCount}</span>}
+              </a>
+            )}
+            <button
+              type="button"
+              className="landing-logout"
+              onClick={() => onNavigate('login')}
+            >
+              Log out
+            </button>
+          </div>
+        )}
       </header>
 
       <main id="landing-main">
@@ -141,13 +287,23 @@ export default function LandingPage({ onNavigate }) {
                 >
                   View menu <span aria-hidden="true">→</span>
                 </a>
-                <a
-                  className="landing-button landing-button--outline"
-                  href="/register"
-                  onClick={(event) => handleLinkClick(event, 'register')}
-                >
-                  Create account
-                </a>
+                {loggedIn ? (
+                  <a
+                    className="landing-button landing-button--outline"
+                    href={isStaff ? '/staff' : '/orders'}
+                    onClick={(event) => handleLinkClick(event, isStaff ? 'home' : 'orders')}
+                  >
+                    {isStaff ? 'Go to dashboard' : 'My orders'}
+                  </a>
+                ) : (
+                  <a
+                    className="landing-button landing-button--outline"
+                    href="/register"
+                    onClick={(event) => handleLinkClick(event, 'register')}
+                  >
+                    Create account
+                  </a>
+                )}
               </div>
 
               <ul className="landing-hero-points">
@@ -175,7 +331,7 @@ export default function LandingPage({ onNavigate }) {
         </section>
 
         <section
-          className="landing-container landing-section"
+          className="landing-container landing-section reveal"
           aria-labelledby="benefits-title"
         >
           <div className="landing-benefits">
@@ -200,8 +356,47 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </section>
 
+        {topPicks.length > 0 && (
+          <section
+            className="landing-container landing-section reveal"
+            aria-labelledby="picks-title"
+          >
+            <p className="landing-eyebrow landing-center">Featured products</p>
+            <div className="landing-section-title">
+              <h2 id="picks-title">Top Picks</h2>
+              <a
+                href="/menu"
+                onClick={(event) => handleLinkClick(event, 'menu')}
+              >
+                See all meals →
+              </a>
+            </div>
+
+            <div className="landing-picks">
+              {topPicks.map((item, index) => (
+                <a
+                  key={item.menu_item_id}
+                  className="landing-pick"
+                  href="/menu"
+                  style={{ transitionDelay: `${index * 0.08}s` }}
+                  onClick={(event) => handleLinkClick(event, 'menu')}
+                >
+                  <MealImage src={item.image_url || ''} alt={`Photo of ${item.name}`} />
+                  <span className="landing-pick-tag">
+                    {item.tag === 'Featured' && '♥ '}
+                    {item.tag === 'Best Seller' && '★ '}
+                    {item.tag}
+                  </span>
+                  <h3>{item.name}</h3>
+                  <strong>{formatMoney(item.price)}</strong>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
         <section
-          className="landing-container landing-section"
+          className="landing-container landing-section reveal"
           aria-labelledby="collections-title"
         >
           <p className="landing-eyebrow landing-center">From our cafeteria</p>
@@ -236,7 +431,7 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </section>
 
-        <section className="landing-container landing-offer">
+        <section className="landing-container landing-offer reveal">
           <div className="landing-offer-banner">
             <div>
               <p>Order ahead</p>
@@ -278,7 +473,7 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </section>
 
-        <section className="landing-container" aria-label="Queu features">
+        <section className="landing-container reveal" aria-label="Queu features">
           <ul className="landing-features">
             {features.map((feature) => (
               <li key={feature.title}>
@@ -292,7 +487,7 @@ export default function LandingPage({ onNavigate }) {
           </ul>
         </section>
 
-        <section className="landing-container">
+        <section className="landing-container reveal">
           <div className="landing-banner">
             <h2>
               Good Food. <em>Less Waiting.</em>
@@ -324,7 +519,7 @@ export default function LandingPage({ onNavigate }) {
 
           <div>
             <h3>Quick links</h3>
-            {footerLinks.map((link) => (
+            {footerLinks.filter((link) => !loggedIn || (link.page !== 'login' && link.page !== 'register')).map((link) => (
               <a
                 key={link.path}
                 href={link.path}
