@@ -111,11 +111,11 @@ export default function StaffDashboard({ onNavigate, showTasks = true }) {
       label: 'View menu',
     },
     {
-      title: 'Daily summary',
-      description: 'View the cafeteria daily summary.',
+      title: 'Sales statistics',
+      description: 'See daily, weekly, monthly and yearly sales and top orders.',
       page: 'staff-summary',
       path: '/staff/summary',
-      label: 'View daily summary',
+      label: 'View sales statistics',
     },
   ]
 
