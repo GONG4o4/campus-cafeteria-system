@@ -11,7 +11,8 @@ function isValidMeal(meal) {
     Number(meal.price) >= 0 &&
     typeof meal.is_available === 'boolean' &&
     (meal.image_url == null || typeof meal.image_url === 'string') &&
-    (meal.is_featured == null || typeof meal.is_featured === 'boolean')
+    (meal.is_featured == null || typeof meal.is_featured === 'boolean') &&
+    (meal.category == null || typeof meal.category === 'string')
   )
 }
 
@@ -24,6 +25,7 @@ function formatMeal(meal) {
     available: Boolean(meal.is_available),
     imageUrl: meal.image_url ?? '',
     featured: meal.is_featured === true,
+    category: meal.category || 'rice_meals',
   }
 }
 
@@ -134,6 +136,7 @@ export async function saveMeal(meal, id) {
         price: String(meal.price).trim(),
         is_available: meal.available,
         image_url: meal.imageUrl?.trim() || null,
+        category: meal.category || 'rice_meals',
       }),
     })
   } catch (cause) {
@@ -252,6 +255,59 @@ export async function deleteMeal(id) {
   }
 
   return id
+}
+
+// Sends a photo file from the staff's computer to the backend.
+// Returns the link of the saved photo.
+export async function uploadMealPhoto(file) {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+
+  if (!file || !allowedTypes.includes(file.type)) {
+    throw new Error('Choose a JPG, PNG or WebP photo.')
+  }
+
+  if (file.size > 2 * 1024 * 1024) {
+    throw new Error('The photo must be 2 MB or smaller.')
+  }
+
+  const token = localStorage.getItem('token')
+
+  if (!token) {
+    throw new Error('Please sign in before uploading a photo.')
+  }
+
+  let response
+
+  try {
+    response = await fetch('http://localhost:3000/api/menu/upload-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': file.type,
+        Authorization: `Bearer ${token}`,
+      },
+      body: file,
+    })
+  } catch {
+    throw new Error('Unable to connect to the backend. Make sure it is running.')
+  }
+
+  let data
+
+  try {
+    data = await response.json()
+  } catch {
+    data = null
+  }
+
+  if (response.status === 401) {
+    throw new Error('Your session has expired. Please sign in again.')
+  }
+
+  if (!response.ok || typeof data?.image_url !== 'string') {
+    throw new Error(data?.message || 'Unable to upload the photo.')
+  }
+
+  return data.image_url
 }
 
 export function notifyMenuChanged() {

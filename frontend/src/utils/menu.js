@@ -1,3 +1,16 @@
+// Menu categories. Keep in sync with backend/routes/menu.js and migration 007.
+export const categories = [
+  { value: 'rice_meals', label: 'Rice Meals' },
+  { value: 'snacks', label: 'Snacks' },
+  { value: 'drinks', label: 'Drinks' },
+  { value: 'desserts', label: 'Desserts' },
+]
+
+export function getCategoryLabel(value) {
+  const category = categories.find((item) => item.value === value)
+  return category ? category.label : 'Rice Meals'
+}
+
 // Checks that the text is a full http:// or https:// link (max 500 characters).
 export function isValidImageUrl(value) {
   if (typeof value !== 'string' || !value || value.length > 500) {
@@ -31,6 +44,10 @@ export function getMealErrors(meal) {
     !/^\d{1,8}(\.\d{1,2})?$/.test(String(meal.price).trim())
   ) {
     errors.price = 'Enter a price from 0 to 99,999,999.99, using up to two decimal places.'
+  }
+
+  if (meal.category != null && !categories.some((item) => item.value === meal.category)) {
+    errors.category = 'Choose a category.'
   }
 
   if (typeof meal.available !== 'boolean') {

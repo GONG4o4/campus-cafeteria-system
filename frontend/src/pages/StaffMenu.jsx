@@ -6,6 +6,7 @@ import MealImage from '../components/menu/MealImage'
 import { deleteMeal, getMenu, notifyMenuChanged, saveMeal } from '../menuApi'
 import { setMealFeatured } from '../requestApi'
 import { formatMoney } from '../utils/orders'
+import { getCategoryLabel } from '../utils/menu'
 import './StaffMenu.css'
 
 export default function StaffMenu() {
@@ -253,6 +254,7 @@ export default function StaffMenu() {
                         <MealImage src={meal.imageUrl} alt={`Photo of ${meal.name}`} small />
                         <div>
                           <span>{meal.name}</span>
+                          <span className="meal-category">{getCategoryLabel(meal.category)}</span>
                           <p>{meal.description || 'No description added.'}</p>
                         </div>
                       </div>

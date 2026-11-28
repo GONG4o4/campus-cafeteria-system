@@ -983,3 +983,78 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Category name above the meal name */
+.menu-card-category {
+  margin-top: 12px;
+  color: #a51c30;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.menu-card-category + h2 {
+  margin-top: 4px;
+}
+
+.menu-filter--categories {
+  margin-top: -12px;
+}
+
+@media (max-width: 760px) {
+  .menu-filter--categories {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .menu-card-category {
+    margin-top: 8px;
+    font-size: 10px;
+  }
+}
+
+/* ===== No-show penalty notice (menu + home page) ===== */
+.penalty-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 0 0 24px;
+  padding: 16px 20px;
+  border: 1px solid #f0d58a;
+  border-left: 5px solid #d18f00;
+  border-radius: 14px;
+  background: #fff8e6;
+  color: #2e1a1c;
+}
+
+.penalty-notice--restricted {
+  border-color: #f1c2c8;
+  border-left-color: #a51c30;
+  background: #fdecee;
+}
+
+.penalty-notice-icon {
+  flex-shrink: 0;
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.penalty-notice h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+
+.penalty-notice p {
+  margin: 0;
+  color: #4a3f3b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .penalty-notice {
+    padding: 14px;
+  }
+}

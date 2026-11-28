@@ -1151,3 +1151,8 @@
     font-size: 15px;
   }
 }
+
+/* Penalty notice sits just under the header */
+.landing-penalty .penalty-notice {
+  margin: 16px 0;
+}

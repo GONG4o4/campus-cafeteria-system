@@ -1,6 +1,7 @@
 import Button from '../ui/Button'
 import MealImage from './MealImage'
 import { formatMoney } from '../../utils/orders'
+import { getCategoryLabel } from '../../utils/menu'
 
 export default function MenuCard({ item, onAdd, isBestSeller = false }) {
   const isFeatured = item.is_featured === true
@@ -31,6 +32,7 @@ export default function MenuCard({ item, onAdd, isBestSeller = false }) {
           </span>
         )}
       </div>
+      <span className="menu-card-category">{getCategoryLabel(item.category)}</span>
       <h2>{item.name}</h2>
       <p>{item.description || 'No description available.'}</p>
 

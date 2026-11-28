@@ -244,6 +244,7 @@ async function getPenaltySummary(db, userId) {
         recent_no_show_count: recentCount,
         offense_threshold: policy.offense_threshold,
         offense_window_days: policy.offense_window_days,
+        restriction_days: policy.restriction_days,
         active_restriction: activeRestriction,
         history: historyResult.rows
     };

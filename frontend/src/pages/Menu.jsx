@@ -5,6 +5,8 @@ import { Alert, Loading } from '../components/ui/Feedback'
 import { getBestSellerIds } from '../menuApi'
 import MealImage from '../components/menu/MealImage'
 import { formatMoney } from '../utils/orders'
+import { categories } from '../utils/menu'
+import PenaltyNotice from '../components/PenaltyNotice'
 
 export default function Menu({ onAdd }) {
   const [items, setItems] = useState([])
@@ -14,6 +16,7 @@ export default function Menu({ onAdd }) {
   const [message, setMessage] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [availabilityFilter, setAvailabilityFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
   // Empty until the backend answers, so no badge shows while loading.
   const [bestSellerIds, setBestSellerIds] = useState([])
 
@@ -21,6 +24,7 @@ export default function Menu({ onAdd }) {
   const filteredItems = items
     .filter((item) => item.name.toLowerCase().includes(search))
     .filter((item) => availabilityFilter === 'all' || item.is_available === true)
+    .filter((item) => categoryFilter === 'all' || (item.category || 'rice_meals') === categoryFilter)
 
   // Top picks = featured meals first, then best sellers. Only meals that
   // can be ordered right now, and each meal only once.
@@ -161,6 +165,8 @@ export default function Menu({ onAdd }) {
         </Button>
       </div>
 
+      <PenaltyNotice />
+
       {message && <Alert>{message}</Alert>}
 
       {!error && !search && shownPicks.length > 0 && (
@@ -222,6 +228,28 @@ export default function Menu({ onAdd }) {
         </div>
       )}
 
+      {!error && items.length > 0 && (
+        <div className="menu-filter menu-filter--categories" role="group" aria-label="Filter by category">
+          <button
+            type="button"
+            aria-pressed={categoryFilter === 'all'}
+            onClick={() => setCategoryFilter('all')}
+          >
+            All categories
+          </button>
+          {categories.map((category) => (
+            <button
+              key={category.value}
+              type="button"
+              aria-pressed={categoryFilter === category.value}
+              onClick={() => setCategoryFilter(category.value)}
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       {firstLoad && (
         <>
           <Loading>Loading the menu...</Loading>
@@ -257,7 +285,7 @@ export default function Menu({ onAdd }) {
           <p>
             {search
               ? 'No meals match your search. Try a different term or clear the search.'
-              : 'There are currently no available meals. Try switching to "All meals".'}
+              : 'No meals match these filters. Try "All meals" or "All categories".'}
           </p>
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '16px' }}>
             {search && (
@@ -265,8 +293,14 @@ export default function Menu({ onAdd }) {
                 Clear search
               </Button>
             )}
-            {availabilityFilter === 'available' && (
-              <Button variant="secondary" onClick={() => setAvailabilityFilter('all')}>
+            {(availabilityFilter === 'available' || categoryFilter !== 'all') && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setAvailabilityFilter('all')
+                  setCategoryFilter('all')
+                }}
+              >
                 Show all meals
               </Button>
             )}
