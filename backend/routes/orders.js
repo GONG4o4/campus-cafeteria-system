@@ -4,18 +4,21 @@ const { authenticateToken, requireRole } = require("../middleware/authMiddleware
 const { createPaymentRequest, getPaymentRequest } = require("../services/hitpay");
 const { confirmPayment } = require("../services/paymentConfirm");
 const { findActiveRestriction, getPenaltySummary, getPolicy } = require("../services/noShow");
+const { UNPAID_WINDOW_MINUTES, getTodaySlots, checkScheduledPickup } = require("../services/pickupSchedule");
 
 const router = express.Router();
 
 // Anti-spam limit: how many unpaid orders a customer can have at once.
-// Only orders placed in the last UNPAID_WINDOW_MINUTES count, so an old
-// abandoned checkout does not block the customer forever.
+// Only orders placed in the last UNPAID_WINDOW_MINUTES count (set in
+// services/pickupSchedule.js), so an old abandoned checkout does not
+// block the customer forever.
 const MAX_UNPAID_ORDERS = 2;
-const UNPAID_WINDOW_MINUTES = 60;
 
 const orderSelect = `
     SELECT o.order_id, o.queue_number, o.status, o.total_amount, o.order_date,
            TO_CHAR(o.ordered_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS ordered_at,
+           o.pickup_type,
+           TO_CHAR(o.scheduled_pickup_at AT TIME ZONE 'Asia/Manila', 'YYYY-MM-DD"T"HH24:MI:SS') AS scheduled_pickup_at,
            COALESCE((
                SELECT p.status 
                FROM payments p 
@@ -65,6 +68,22 @@ router.get("/no-show-policy", authenticateToken, requireRole("student"), async (
         console.error("No-show policy failed:", error.message);
         return res.status(500).json({
             message: "Unable to load the pickup policy. Please try again."
+        });
+    }
+});
+
+// Pickup times the customer can choose for scheduled pickup TODAY,
+// with how many places are left in each. Times that are too soon,
+// already passed, or outside cafeteria hours are not listed.
+// Must stay above "/:id" so "pickup-slots" is not read as an order ID.
+router.get("/pickup-slots", authenticateToken, requireRole("student"), async (req, res) => {
+    try {
+        const data = await getTodaySlots(pool);
+        return res.json(data);
+    } catch (error) {
+        console.error("Pickup slots failed:", error.message);
+        return res.status(500).json({
+            message: "Unable to load pickup times. Please try again."
         });
     }
 });
@@ -211,6 +230,17 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
             });
         }
 
+        // Pickup choice. Leaving it out means ASAP, so older clients still work.
+        // { "type": "asap" } or { "type": "scheduled", "time": "10:30" }
+        const pickup = req.body?.pickup === undefined ? { type: "asap" } : req.body.pickup;
+
+        if (!pickup || typeof pickup !== "object" || !["asap", "scheduled"].includes(pickup.type)) {
+            return res.status(400).json({
+                message: "Choose ASAP or a scheduled pickup time.",
+                code: "INVALID_PICKUP"
+            });
+        }
+
         const seenIds = new Set();
 
         for (const item of items) {
@@ -270,6 +300,25 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
                     });
                 }
 
+                // Scheduled pickup: check the time and reserve a place in
+                // its slot. Done inside this transaction so the slot count
+                // and the new order are saved together.
+                let scheduledAt = null;
+
+                if (pickup.type === "scheduled") {
+                    const check = await checkScheduledPickup(client, pickup.time);
+
+                    if (check.error) {
+                        await client.query("ROLLBACK");
+                        return res.status(check.full ? 409 : 400).json({
+                            message: check.error,
+                            code: check.full ? "PICKUP_SLOT_FULL" : "INVALID_PICKUP_TIME"
+                        });
+                    }
+
+                    scheduledAt = check.scheduledAt;
+                }
+
                 const ids = items.map(item => item.menu_item_id);
                 const menuResult = await client.query(
                     `SELECT menu_item_id, price, is_available, name
@@ -326,11 +375,13 @@ router.post("/", authenticateToken, requireRole("student"), async (req, res) => 
                 const policy = await getPolicy(client);
 
                 const orderResult = await client.query(
-                    `INSERT INTO orders (user_id, total_amount, order_date, no_show_ack_at, no_show_policy_version)
-                    VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4)
+                    `INSERT INTO orders (user_id, total_amount, order_date, no_show_ack_at, no_show_policy_version,
+                                         pickup_type, scheduled_pickup_at)
+                    VALUES ($1, $2, $3, CURRENT_TIMESTAMP, $4, $5, $6)
                     RETURNING order_id, status, total_amount, order_date`,
                     [
-                        req.user.user_id, toAmount(totalCents), orderDate, policy.policy_version
+                        req.user.user_id, toAmount(totalCents), orderDate, policy.policy_version,
+                        pickup.type, scheduledAt
                     ]
                 );
 

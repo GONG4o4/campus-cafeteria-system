@@ -4,6 +4,7 @@ import {
   formatOrderDate,
   orderStatuses,
 } from '../../utils/orders'
+import { getPickupLabel } from '../../utils/pickup'
 
 const steps = ['Pending', 'Preparing', 'Ready', 'Picked up']
 
@@ -49,6 +50,9 @@ export default function OrderCard({
         </div>
         <div className="order-summary">
           <p>{order.items.map((item) => item.name).join(', ')}</p>
+          <span className={order.pickupType === 'scheduled' ? 'pickup-tag pickup-tag--scheduled' : 'pickup-tag'}>
+            Pickup: {getPickupLabel(order.pickupType, order.scheduledPickupAt)}
+          </span>
           <span>
             {itemCount} {itemCount === 1 ? 'item' : 'items'}
           </span>

@@ -11,7 +11,23 @@ const filters = [
   { value: 'picked_up', label: 'Picked up' },
   { value: 'no_show', label: 'No-show' },
   { value: 'cancelled', label: 'Cancelled' },
+  { value: 'scheduled', label: 'Scheduled pickup' },
 ]
+
+// "scheduled" shows every scheduled order; the others match the status.
+function matchesFilter(order, value) {
+  if (value === 'all') return true
+  if (value === 'scheduled') return order.pickup_type === 'scheduled'
+  return order.status === value
+}
+
+// What staff should do with a scheduled order. prep_status is decided
+// by the server's clock, not the tablet's.
+const prepMessages = {
+  upcoming: (order) => `Start preparing at ${formatTime(order.prepare_from)}`,
+  prepare_now: (order) => `Prepare now. Customer picks up at ${formatTime(order.scheduled_pickup_at)}`,
+  late: (order) => `Late. Pickup time ${formatTime(order.scheduled_pickup_at)} has passed. Prepare it as soon as possible`,
+}
 
 const nextStatus = {
   pending: 'preparing',
@@ -210,8 +226,11 @@ export default function StaffOrderQueue() {
   }
 
   const visibleOrders = orders.filter(
-    (order) => filter === 'all' || order.status === filter
+    (order) => matchesFilter(order, filter)
   )
+
+  const prepareNowCount = orders.filter((order) => order.prep_status === 'prepare_now').length
+  const lateCount = orders.filter((order) => order.prep_status === 'late').length
 
   return (
     <main className="student-page staff-page">
@@ -248,10 +267,23 @@ export default function StaffOrderQueue() {
           >
             {item.label} ({item.value === 'all'
               ? orders.length
-              : orders.filter((order) => order.status === item.value).length})
+              : orders.filter((order) => matchesFilter(order, item.value)).length})
           </button>
         ))}
       </div>
+
+      {!loading && !error && (prepareNowCount > 0 || lateCount > 0) && (
+        <div className="staff-schedule-alert" role="status">
+          <strong>Scheduled orders:</strong>
+          {prepareNowCount > 0 && ` ${prepareNowCount} to prepare now.`}
+          {lateCount > 0 && ` ${lateCount} late.`}
+          {filter !== 'scheduled' && (
+            <button type="button" onClick={() => setFilter('scheduled')}>
+              Show scheduled orders
+            </button>
+          )}
+        </div>
+      )}
 
       {loading && <Loading>Loading cafeteria orders...</Loading>}
 
@@ -270,6 +302,12 @@ export default function StaffOrderQueue() {
             const confirming = confirmNoShowId === order.order_id
 
             let cardClass = 'staff-queue-card'
+
+            if (order.prep_status === 'late') {
+              cardClass += ' staff-queue-card--late'
+            } else if (order.prep_status === 'prepare_now') {
+              cardClass += ' staff-queue-card--prepare'
+            }
 
             if (overdue) {
               cardClass += ' staff-queue-card--overdue'
@@ -293,6 +331,22 @@ export default function StaffOrderQueue() {
                     {statusLabels[order.status] || order.status}
                   </span>
                 </div>
+
+                <div className="staff-pickup-type">
+                  {order.pickup_type === 'scheduled' ? (
+                    <span className="pickup-badge pickup-badge--scheduled">
+                      Scheduled · pickup {formatTime(order.scheduled_pickup_at)}
+                    </span>
+                  ) : (
+                    <span className="pickup-badge">ASAP</span>
+                  )}
+                </div>
+
+                {order.prep_status && prepMessages[order.prep_status] && (
+                  <p className={`staff-prep-info staff-prep-info--${order.prep_status}`}>
+                    {prepMessages[order.prep_status](order)}
+                  </p>
+                )}
 
                 {awaitingPickup && order.pickup_deadline && (
                   <div className={overdue ? 'staff-pickup-info staff-pickup-info--overdue' : 'staff-pickup-info'}>

@@ -1,4 +1,5 @@
-export async function createCheckoutSession(items, acknowledgedNoShowPolicy) {
+// pickup is { type: 'asap' } or { type: 'scheduled', time: '10:30' }
+export async function createCheckoutSession(items, acknowledgedNoShowPolicy, pickup = { type: 'asap' }) {
   if (acknowledgedNoShowPolicy !== true) {
     throw new Error('Please confirm the pickup and no-show policy before placing your order.')
   }
@@ -24,6 +25,7 @@ export async function createCheckoutSession(items, acknowledgedNoShowPolicy) {
           quantity: item.quantity,
         })),
         acknowledge_no_show_policy: true,
+        pickup,
       }),
     })
   } catch (cause) {

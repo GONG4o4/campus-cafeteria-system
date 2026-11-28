@@ -3,6 +3,7 @@ import Button from '../components/ui/Button'
 import { Alert, Loading } from '../components/ui/Feedback'
 import { orderStatuses, formatMoney, formatOrderDate } from '../utils/orders'
 import { getOrders } from '../ordersApi'
+import { getPickupLabel } from '../utils/pickup'
 import PickupReminder from '../components/checkout/PickupReminder'
 import './OrderConfirmation.css'
 
@@ -103,6 +104,7 @@ export default function OrderConfirmation({ order = null, orderId, onNavigate })
             <strong>#{queueNumber}</strong>
           </section>
           <p>Order Reference: {orderReference}</p>
+          <p>Pickup: <strong>{getPickupLabel(receipt.pickupType, receipt.scheduledPickupAt)}</strong></p>
           <p>Order Status: {statusInfo?.label || 'Status unavailable'}</p>
           <p>{statusInfo?.message || 'No status update available.'}</p>
 

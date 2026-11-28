@@ -4,6 +4,7 @@ import { Alert, Loading } from '../components/ui/Feedback'
 import { getOrders, verifyPayment } from '../ordersApi'
 import { formatMoney } from '../utils/orders'
 import PickupReminder from '../components/checkout/PickupReminder'
+import { getPickupLabel } from '../utils/pickup'
 
 export default function PaymentSuccess({ onNavigate }) {
   const queryParams = new URLSearchParams(window.location.search)
@@ -119,6 +120,7 @@ export default function PaymentSuccess({ onNavigate }) {
           </div>
 
           <p>Total Paid: <strong>{formatMoney(order.total)}</strong></p>
+          <p>Pickup: <strong>{getPickupLabel(order.pickupType, order.scheduledPickupAt)}</strong></p>
 
           <PickupReminder compact queueNumber={order.queueNumber} />
 
