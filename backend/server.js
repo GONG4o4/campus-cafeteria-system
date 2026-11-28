@@ -15,6 +15,7 @@ const authTest = require("./routes/authTest");
 const menu = require("./routes/menu");
 const orders = require("./routes/orders");
 const staffOrders = require("./routes/staffOrders");
+const staffAnalytics = require("./routes/staffAnalytics");
 const payments = require("./routes/payments");
 const admin = require("./routes/admin");
 const feedback = require("./routes/feedback");
@@ -41,6 +42,7 @@ app.use("/api/auth", authTest);
 app.use("/api/menu", menu);
 app.use("/api/orders", orders);
 app.use("/api/staff", staffOrders);
+app.use("/api/staff", staffAnalytics);
 app.use("/api/admin", admin); // Added from main branch
 app.use("/api/feedback", feedback);
 
