@@ -30,14 +30,28 @@ router.get('/orders', requireRole('cafeteria_staff', 'super_admin'), async (req,
         o.total_amount,
         'paid' AS payment_status,
         TO_CHAR(o.ready_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS ready_at,
+        -- Scheduled pickup (issue #96). Times are sent as Asia/Manila time.
+        o.pickup_type,
+        TO_CHAR(o.scheduled_pickup_at AT TIME ZONE 'Asia/Manila', 'YYYY-MM-DD"T"HH24:MI:SS') AS scheduled_pickup_at,
+        TO_CHAR((o.scheduled_pickup_at - make_interval(mins => ps.prep_lead_minutes)) AT TIME ZONE 'Asia/Manila', 'YYYY-MM-DD"T"HH24:MI:SS') AS prepare_from,
+        -- Decided by the server clock, not the tablet's clock:
+        --   upcoming    = not time to prepare yet
+        --   prepare_now = within the preparation lead time
+        --   late        = pickup time has passed and the order is not ready yet
+        CASE
+          WHEN o.pickup_type <> 'scheduled' OR o.status NOT IN ('pending', 'preparing') THEN NULL
+          WHEN CURRENT_TIMESTAMP >= o.scheduled_pickup_at THEN 'late'
+          WHEN CURRENT_TIMESTAMP >= o.scheduled_pickup_at - make_interval(mins => ps.prep_lead_minutes) THEN 'prepare_now'
+          ELSE 'upcoming'
+        END AS prep_status,
         CASE WHEN o.status = 'ready' THEN
-          TO_CHAR(COALESCE(o.ready_at, o.updated_at) + make_interval(mins => policy.pickup_window_minutes), 'YYYY-MM-DD"T"HH24:MI:SS')
+          TO_CHAR(GREATEST(COALESCE(o.ready_at, o.updated_at), o.scheduled_pickup_at AT TIME ZONE current_setting('TimeZone')) + make_interval(mins => policy.pickup_window_minutes), 'YYYY-MM-DD"T"HH24:MI:SS')
         END AS pickup_deadline,
         CASE WHEN o.status = 'ready' THEN
-          TO_CHAR(COALESCE(o.ready_at, o.updated_at) + make_interval(mins => policy.pickup_window_minutes + policy.grace_period_minutes), 'YYYY-MM-DD"T"HH24:MI:SS')
+          TO_CHAR(GREATEST(COALESCE(o.ready_at, o.updated_at), o.scheduled_pickup_at AT TIME ZONE current_setting('TimeZone')) + make_interval(mins => policy.pickup_window_minutes + policy.grace_period_minutes), 'YYYY-MM-DD"T"HH24:MI:SS')
         END AS no_show_after,
         COALESCE(
-          o.status = 'ready' AND CURRENT_TIMESTAMP >= COALESCE(o.ready_at, o.updated_at) + make_interval(mins => policy.pickup_window_minutes + policy.grace_period_minutes),
+          o.status = 'ready' AND CURRENT_TIMESTAMP >= GREATEST(COALESCE(o.ready_at, o.updated_at), o.scheduled_pickup_at AT TIME ZONE current_setting('TimeZone')) + make_interval(mins => policy.pickup_window_minutes + policy.grace_period_minutes),
           false
         ) AS can_mark_no_show,
         -- No-show outcome, only for orders marked no-show. No customer
@@ -65,6 +79,7 @@ router.get('/orders', requireRole('cafeteria_staff', 'super_admin'), async (req,
         ), '[]'::json) AS items
       FROM orders o
       LEFT JOIN no_show_policy policy ON policy.policy_id = 1
+      LEFT JOIN pickup_settings ps ON ps.setting_id = 1
       LEFT JOIN no_show_records ns ON ns.order_id = o.order_id
       LEFT JOIN customer_restrictions cr ON cr.no_show_id = ns.no_show_id
       WHERE EXISTS (

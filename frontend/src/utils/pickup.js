@@ -31,6 +31,28 @@ export function getPickupReminderLines() {
   ]
 }
 
+// "Today at 10:30 AM" for a scheduled order, "ASAP" otherwise.
+// scheduledAt comes from the backend already in Asia/Manila time
+// ("2026-11-28T10:30:00"), so only the hour and minute are read.
+// This way the browser's own time zone cannot change the shown time.
+export function getPickupLabel(pickupType, scheduledAt) {
+  if (pickupType !== 'scheduled' || typeof scheduledAt !== 'string') {
+    return 'ASAP'
+  }
+
+  const time = scheduledAt.slice(11, 16)
+  const [hour, minute] = time.split(':').map(Number)
+
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) {
+    return 'Scheduled'
+  }
+
+  const suffix = hour >= 12 ? 'PM' : 'AM'
+  const shownHour = hour % 12 === 0 ? 12 : hour % 12
+
+  return `Today at ${shownHour}:${String(minute).padStart(2, '0')} ${suffix}`
+}
+
 // Short version, shown after the backend has confirmed the order.
 // The queue number always comes from the backend, never from the browser.
 export function getPickupConfirmationLines(queueNumber) {

@@ -1058,3 +1058,144 @@
     padding: 14px;
   }
 }
+
+/* ===== Pickup choice at checkout (issue #96) ===== */
+.pickup-choice {
+  margin: 0 0 16px;
+  padding: 16px 20px;
+  border: 1px solid #e9dcc3;
+  border-radius: 12px;
+  background: #fffcf5;
+}
+
+.pickup-choice h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.pickup-choice-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pickup-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e9dcc3;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.pickup-option--selected {
+  border-color: #a51c30;
+  background: #fbf0f1;
+}
+
+.pickup-option input {
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: #a51c30;
+}
+
+.pickup-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pickup-option small {
+  color: #6f5f5a;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.pickup-choice-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.pickup-choice-time label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pickup-choice-time select {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #e0d0b4;
+  border-radius: 10px;
+  background: #fff;
+  color: #2e1a1c;
+  font: inherit;
+  font-size: 14px;
+}
+
+.pickup-choice-time select:focus-visible {
+  outline: 2px solid #a51c30;
+  outline-offset: 2px;
+}
+
+.pickup-choice-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #a51c30;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.pickup-choice-note {
+  margin: 12px 0 0;
+  color: #6f5f5a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pickup-choice-note--error {
+  color: #a51c30;
+}
+
+.pickup-choice-summary {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f6ecd8;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pickup-choice-summary:empty {
+  display: none;
+}
+
+/* Pickup line on order history cards */
+.pickup-tag {
+  display: inline-block;
+  margin: 2px 0 4px;
+  color: #6f5f5a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.pickup-tag--scheduled {
+  color: #1f4e9c;
+}
+
+@media (max-width: 600px) {
+  .pickup-choice {
+    padding: 14px;
+  }
+
+  .pickup-choice-options {
+    grid-template-columns: 1fr;
+  }
+}

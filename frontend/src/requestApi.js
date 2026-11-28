@@ -51,6 +51,11 @@ export function getSalesStats(period) {
   return apiRequest(`/staff/stats?period=${period}`)
 }
 
+// ---- Scheduled pickup ----
+export function getPickupSlots() {
+  return apiRequest('/orders/pickup-slots')
+}
+
 // ---- Feedback and reports ----
 export function sendFeedback(feedback) {
   return apiRequest('/feedback', 'POST', feedback)

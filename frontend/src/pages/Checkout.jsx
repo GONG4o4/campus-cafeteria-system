@@ -8,6 +8,7 @@ import { getNoShowPolicy } from '../noShowPolicyApi'
 import { canPlaceOrder } from '../utils/noShowPolicy'
 import NoShowNotice from '../components/checkout/NoShowNotice'
 import PickupReminder from '../components/checkout/PickupReminder'
+import PickupChoice from '../components/checkout/PickupChoice'
 
 export default function Checkout({
   cart,
@@ -22,6 +23,7 @@ export default function Checkout({
   const [acknowledged, setAcknowledged] = useState(false)
   const [policy, setPolicy] = useState(null)
   const [policyLoading, setPolicyLoading] = useState(true)
+  const [pickup, setPickup] = useState({ type: 'asap' })
 
   // Load the real policy numbers so the warning matches the backend rules.
   // If it fails, the notice shows general wording instead.
@@ -44,7 +46,10 @@ export default function Checkout({
     return () => controller.abort()
   }, [])
 
-  const orderAllowed = canPlaceOrder({
+  // A scheduled order needs a chosen time.
+  const pickupReady = pickup.type === 'asap' || Boolean(pickup.time)
+
+  const orderAllowed = pickupReady && canPlaceOrder({
     acknowledged,
     loading,
     orderStatusUnknown,
@@ -61,7 +66,7 @@ export default function Checkout({
     setError('')
 
     try {
-      const result = await createCheckoutSession(checkoutItems, acknowledged)
+      const result = await createCheckoutSession(checkoutItems, acknowledged, pickup)
       window.location.href = result.checkout_url
     } catch (requestError) {
       setError(requestError.message || 'Unable to place your order.')
@@ -117,6 +122,8 @@ export default function Checkout({
             You will be redirected to HitPay to complete your payment securely. 
             Your final total and queue number will be confirmed after the payment is verified.
           </p>
+
+          <PickupChoice pickup={pickup} onChange={setPickup} disabled={loading} />
 
           <PickupReminder />
 

@@ -12,6 +12,8 @@ function formatOrder(order) {
     status: order.status,
     paymentStatus: order.payment_status,
     total: Number(order.total_amount),
+    pickupType: order.pickup_type || 'asap',
+    scheduledPickupAt: order.scheduled_pickup_at || null,
 
     createdAt,
     items: order.items.map((item) => ({

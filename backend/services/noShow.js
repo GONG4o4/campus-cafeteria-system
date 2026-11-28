@@ -60,14 +60,17 @@ async function markOrderNoShow(client, orderId, staffUserId) {
     const deadlineMinutes = policy.pickup_window_minutes;
     const graceEndMinutes = policy.pickup_window_minutes + policy.grace_period_minutes;
 
+    // The pickup timer starts when the order is marked ready. For a
+    // scheduled order that was finished early, it starts at the customer's
+    // chosen pickup time instead, so they are not penalised while in class.
     // FOR UPDATE locks the order so two staff clicking at the same time
     // cannot both record a no-show.
     const orderResult = await client.query(
         `SELECT order_id, user_id, queue_number, status,
-                TO_CHAR(COALESCE(ready_at, updated_at) + make_interval(mins => $2), ${TIME_FORMAT}) AS pickup_deadline,
-                TO_CHAR(COALESCE(ready_at, updated_at) + make_interval(mins => $3), ${TIME_FORMAT}) AS no_show_after,
-                CURRENT_TIMESTAMP >= COALESCE(ready_at, updated_at) + make_interval(mins => $2) AS deadline_passed,
-                CURRENT_TIMESTAMP >= COALESCE(ready_at, updated_at) + make_interval(mins => $3) AS grace_passed
+                TO_CHAR(GREATEST(COALESCE(ready_at, updated_at), scheduled_pickup_at AT TIME ZONE current_setting('TimeZone')) + make_interval(mins => $2), ${TIME_FORMAT}) AS pickup_deadline,
+                TO_CHAR(GREATEST(COALESCE(ready_at, updated_at), scheduled_pickup_at AT TIME ZONE current_setting('TimeZone')) + make_interval(mins => $3), ${TIME_FORMAT}) AS no_show_after,
+                CURRENT_TIMESTAMP >= GREATEST(COALESCE(ready_at, updated_at), scheduled_pickup_at AT TIME ZONE current_setting('TimeZone')) + make_interval(mins => $2) AS deadline_passed,
+                CURRENT_TIMESTAMP >= GREATEST(COALESCE(ready_at, updated_at), scheduled_pickup_at AT TIME ZONE current_setting('TimeZone')) + make_interval(mins => $3) AS grace_passed
          FROM orders
          WHERE order_id = $1
          FOR UPDATE`,
